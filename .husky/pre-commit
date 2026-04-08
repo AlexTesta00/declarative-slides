@@ -1,0 +1,2 @@
+npm run scala:fmt:check
+npm run scala:test
