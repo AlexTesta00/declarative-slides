@@ -1,0 +1,62 @@
+{
+  "name": "declerative-slides",
+  "version": "0.0.1",
+  "description": "",
+  "homepage": "https://github.com/AlexTesta00/declarative-slides#readme",
+  "bugs": {
+    "url": "https://github.com/AlexTesta00/declarative-slides/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlexTesta00/declarative-slides.git"
+  },
+  "license": "MIT",
+  "author": "Alex Testa",
+  "type": "commonjs",
+  "main": "index.js",
+  "private": true,
+  "scripts": {
+    "release": "semantic-release"
+  },
+  "devDependencies": {
+    "semantic-release": "^25.0.2",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^12.0.6",
+    "@semantic-release/npm": "^13.1.5",
+    "@semantic-release/release-notes-generator": "^14.1.0"
+  },
+  "release": {
+    "branches": ["main"],
+    "plugins": [
+      [
+        "@semantic-release/commit-analyzer",
+        {
+          "preset": "conventionalcommits"
+        }
+      ],
+      [
+        "@semantic-release/release-notes-generator",
+        {
+          "preset": "conventionalcommits"
+        }
+      ],
+      "@semantic-release/changelog",
+      [
+        "@semantic-release/npm",
+        {
+          "npmPublish": false
+        }
+      ],
+      [
+        "@semantic-release/git",
+        {
+          "assets": ["CHANGELOG.md", "package.json", "package-lock.json"],
+          "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+        }
+      ],
+      "@semantic-release/github"
+    ]
+  }
+}
