@@ -21,7 +21,9 @@
     "commitlint": "commitlint --edit",
     "scala:test": "sbt test",
     "scala:fmt": "sbt scalafmtAll",
-    "scala:fmt:check": "sbt scalafmtCheckAll"
+    "scala:fmt:check": "sbt scalafmtCheckAll",
+    "scala:lint": "sbt --batch scalafixAll",
+    "scala:lint:check": "sbt --batch \"scalafixAll --check\""
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",

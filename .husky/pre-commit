@@ -1,2 +1,3 @@
 npm run scala:fmt:check
+npm run scala:lint:check
 npm run scala:test
