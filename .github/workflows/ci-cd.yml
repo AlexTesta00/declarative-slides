@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-24.04, windows-2025, macos-26]
 
     steps:
       - name: Checkout code
@@ -83,7 +83,7 @@ jobs:
           check-latest: 'false'
 
       - name: Install dependency
-        run: npm install
+        run: npm ci
 
       - name: Run semantic-release
         env:
