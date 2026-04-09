@@ -451,7 +451,7 @@ class DslSpec extends AnyFlatSpec with Matchers:
             slide("Two") {
               content(
                 bullets("a", "b"),
-                spacer(1),
+                spacer(),
                 code("scala", "println(2)"),
               )
             },
@@ -473,7 +473,7 @@ class DslSpec extends AnyFlatSpec with Matchers:
           slide("Ordered") {
             content(
               text("A"),
-              spacer(1),
+              spacer(),
               bullets("B1", "B2"),
               code("scala", "println(3)"),
               text("Z"),
