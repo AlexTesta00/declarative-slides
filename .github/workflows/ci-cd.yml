@@ -27,8 +27,21 @@ jobs:
       - name: Setup sbt
         uses: sbt/setup-sbt@v1
 
-      - name: Run tests
+      - name: Run tests without coverage
+        if: matrix.os != 'ubuntu-24.04'
         run: sbt test
+
+      - name: Run tests with coverage
+        if: matrix.os == 'ubuntu-24.04'
+        run: sbt clean coverage test coverageReport
+
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-24.04'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./target/scala-*/scoverage-report/scoverage.xml
+          fail_ci_if_error: true
 
   build:
     name: Build (${{ matrix.os }})
