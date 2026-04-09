@@ -1,5 +1,5 @@
 package declslides.domain
 
-enum Layout:
+enum Layout derives CanEqual:
   case Flow
   case Centered
