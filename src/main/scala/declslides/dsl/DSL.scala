@@ -22,12 +22,12 @@ object DSL:
   final case class PresBuild(
     run: PresentationState => PresentationState):
 
-    infix def andThen(other: PresBuild): PresBuild =
+    private infix def andThen(other: PresBuild): PresBuild =
       PresBuild(state => other.run(run(state)))
 
-  object PresBuild:
+  private object PresBuild:
 
-    val empty: PresBuild =
+    private val empty: PresBuild =
       PresBuild(identity)
 
     def combineAll(builds: Seq[PresBuild]): PresBuild =
@@ -36,12 +36,12 @@ object DSL:
   final case class SlideBuild(
     run: SlideState => SlideState):
 
-    infix def andThen(other: SlideBuild): SlideBuild =
+    private infix def andThen(other: SlideBuild): SlideBuild =
       SlideBuild(state => other.run(run(state)))
 
-  object SlideBuild:
+  private object SlideBuild:
 
-    val empty: SlideBuild =
+    private val empty: SlideBuild =
       SlideBuild(identity)
 
     def combineAll(builds: Seq[SlideBuild]): SlideBuild =
@@ -62,7 +62,10 @@ object DSL:
       validateSlides(finalState.pendingSlides)
 
     val presentationErrors =
-      validatePresentationSkeleton(finalState.title, finalState.pendingSlides)
+      Presentation.validateSkeleton(
+        title = finalState.title,
+        slideTitles = finalState.pendingSlides.map(_.title),
+      )
 
     val allErrors =
       slideErrors ++ presentationErrors
@@ -140,32 +143,3 @@ object DSL:
       results.collect { case Right(slide) => slide }
 
     (errors, validSlides)
-
-  private def validatePresentationSkeleton(
-    title: String,
-    pendingSlides: Vector[PendingSlide],
-  ): Vector[DomainError] =
-    val normalizedTitle =
-      title.trim
-
-    val duplicates =
-      pendingSlides
-        .map(_.title.trim)
-        .groupBy(identity)
-        .collect {
-          case (slideTitle, sameTitles)
-              if slideTitle.nonEmpty && sameTitles.size > 1 =>
-            slideTitle
-        }
-        .toVector
-        .sorted
-
-    Option.when(normalizedTitle.isEmpty)(
-      DomainError.EmptyPresentationTitle,
-    ).toVector ++
-      Option.when(pendingSlides.isEmpty)(
-        DomainError.PresentationWithoutSlides,
-      ).toVector ++
-      Option.when(duplicates.nonEmpty)(
-        DomainError.DuplicateSlideTitles(duplicates),
-      ).toVector
