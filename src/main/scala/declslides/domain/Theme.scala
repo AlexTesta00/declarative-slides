@@ -8,8 +8,33 @@ final case class Theme(
   codeBackground: String)
 
 object Theme:
-  val default = Theme("default", "#101418", "#F5F7FA", "#4DD0E1", "#1B2530")
-  val light = Theme("light", "#FFFFFF", "#1F2933", "#3366FF", "#F4F7FB")
 
-  val conference =
-    Theme("conference", "#0B132B", "#FAF9F6", "#FFB703", "#1C2541")
+  val default: Theme =
+    Theme(
+      name = "default",
+      background = "#101418",
+      foreground = "#F5F7FA",
+      accent = "#4DD0E1",
+      codeBackground = "#1B2530",
+    )
+
+  val light: Theme =
+    Theme(
+      name = "light",
+      background = "#FFFFFF",
+      foreground = "#1F2933",
+      accent = "#3366FF",
+      codeBackground = "#F4F7FB",
+    )
+
+  val conference: Theme =
+    Theme(
+      name = "conference",
+      background = "#0B132B",
+      foreground = "#FAF9F6",
+      accent = "#FFB703",
+      codeBackground = "#1C2541",
+    )
+
+  val presets: Vector[Theme] =
+    Vector(default, light, conference)
