@@ -1,11 +1,14 @@
 package declslides.domain
 
+type ThemeName = String
+type HexColor = String
+
 final case class Theme(
-  name: String,
-  background: String,
-  foreground: String,
-  accent: String,
-  codeBackground: String)
+  name: ThemeName,
+  background: HexColor,
+  foreground: HexColor,
+  accent: HexColor,
+  codeBackground: HexColor)
 
 object Theme:
 
