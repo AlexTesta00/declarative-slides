@@ -1,7 +1,9 @@
 package rendering
 
+import declslides.domain.Layout
 import declslides.dsl.DSL._
 import declslides.rendering.RenderingTarget
+import declslides.rendering.RenderingTarget.Text
 import declslides.rendering.TextRenderer
 import org.scalatest.EitherValues.convertEitherToValuable
 import org.scalatest.flatspec.AnyFlatSpec
@@ -9,93 +11,93 @@ import org.scalatest.matchers.should.Matchers
 
 class TextRendererSpec extends AnyFlatSpec with Matchers:
 
+  behavior of "TextRenderer"
+
   private val renderer = TextRenderer()
 
-  "A text renderer" should "return a text document" in:
-    val deck =
-      presentation("Demo") {
-        slide("Intro")(text("Hello"))
-      }.value
+  private def demoDeck(body: => PresBuild) =
+    presentation("Demo") {
+      slide("Intro")(text("Hello"))
+      body
+    }.value
 
-    val document = renderer.render(deck)
+  private def render(body: => PresBuild) =
+    renderer.render(demoDeck(body))
 
-    document.target shouldBe RenderingTarget.Text
+  private def renderedContent(body: => PresBuild) =
+    render(body).content
+
+  private def singleSlideContent(title: String = "Intro")(body: => SlideBuild)
+    : String =
+    renderedContent:
+      slide(title):
+        body
+
+  private def singleSlideContentWithLayout(
+    title: String,
+    layout: Layout,
+  )(body: => SlideBuild,
+  ): String =
+    renderedContent:
+      slide(title, layout):
+        body
+
+  it should "return a text document" in:
+    val document = render:
+      slide("Intro")(text("Hello"))
+
+    document.target shouldBe Text
     document.fileExtension shouldBe "txt"
 
   it should "render the presentation title" in:
-    val deck =
-      presentation("Demo") {
-        slide("Intro")(text("Hello"))
-      }.value
+    val content = singleSlideContent():
+      text("Hello")
 
-    val content = renderer.render(deck).content
     content should include("Demo")
 
   it should "render the theme name" in:
-    val deck =
-      presentation("Demo") {
-        slide("Intro")(text("Hello"))
-      }.value
+    val content = singleSlideContent():
+      text("Hello")
 
-    val content = renderer.render(deck).content
     content should include("Theme: default")
 
   it should "preserve slide order" in:
-    val deck =
-      presentation("Demo") {
-        slide("First")(text("A"))
-        slide("Second")(text("B"))
-      }.value
+    val content = renderedContent:
+      slide("First")(text("A"))
+      slide("Second")(text("B"))
 
-    val content = renderer.render(deck).content
     content.indexOf("First") should be < content.indexOf("Second")
 
   it should "number slides" in:
-    val deck =
-      presentation("Demo") {
-        slide("First")(text("A"))
-      }.value
+    val content = singleSlideContent("First"):
+      text("A")
 
-    val content = renderer.render(deck).content
     content should include("[1] First")
 
   it should "render paragraphs as plain text" in:
-    val deck =
-      presentation("Demo") {
-        slide("Intro")(text("Hello world"))
-      }.value
+    val content = singleSlideContent():
+      text("Hello world")
 
-    val content = renderer.render(deck).content
     content should include("Hello world")
 
   it should "render bullet lists with hyphen prefixes" in:
-    val deck =
-      presentation("Demo") {
-        slide("Bullets")(bullets("One", "Two"))
-      }.value
+    val content = singleSlideContent("Bullets"):
+      bullets("One", "Two")
 
-    val content = renderer.render(deck).content
-    content should include("- One")
-    content should include("- Two")
+    content should (include("- One") and include("- Two"))
 
   it should "render code blocks using fenced syntax" in:
-    val deck =
-      presentation("Demo") {
-        slide("Code")(code("scala", "val x = 42"))
-      }.value
+    val content = singleSlideContent("Code"):
+      code("scala", "val x = 42")
 
-    val content = renderer.render(deck).content
-    content should include("```scala")
-    content should include("val x = 42")
-    content should include("```")
+    content should (
+      include("```scala") and
+        include("val x = 42") and
+        include("```")
+    )
 
   it should "render layout information" in:
-    val deck =
-      presentation("Demo") {
-        slide("Centered", declslides.domain.Layout.Centered) {
-          text("Hello")
-        }
-      }.value
+    val content = singleSlideContentWithLayout("Centered", Layout.Centered):
+      text("Hello")
 
-    val content = renderer.render(deck).content
     content should include("Centered (Centered)")
