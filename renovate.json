@@ -3,6 +3,8 @@
   "extends": ["config:recommended"],
   "baseBranchPatterns": ["develop"],
   "labels": ["dependencies"],
+  "timezone": "Europe/Rome",
+  "schedule": ["* 0-3 * * *"],
   "prHourlyLimit": 2,
   "automerge": false,
   "packageRules": [
