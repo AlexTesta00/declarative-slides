@@ -1,0 +1,19 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "baseBranchPatterns": ["develop"],
+  "labels": ["dependencies"],
+  "timezone": "Europe/Rome",
+  "schedule": ["* 0-3 * * *"],
+  "prHourlyLimit": 2,
+  "automerge": false,
+  "packageRules": [
+    {
+      "matchManagers": ["sbt"],
+      "groupName": "scala dependencies"
+    }
+  ],
+  "npm": {
+    "enabled": true
+  }
+}
