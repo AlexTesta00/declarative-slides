@@ -11,6 +11,9 @@ ThisBuild / scalacOptions += "-Wunused:imports"
 lazy val root = (project in file("."))
   .settings(
     name := "declerative-slides",
-    libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.20" % Test,
-    libraryDependencies += "com.lihaoyi" %% "scalatags" % "0.13.1"
+    libraryDependencies ++= Seq(
+      "org.scalatest" %% "scalatest" % "3.2.20" % Test,
+      "com.lihaoyi" %% "scalatags" % "0.13.1",
+      "com.github.japgolly.scalacss" %% "core" % "1.0.0"
+    )
   )
