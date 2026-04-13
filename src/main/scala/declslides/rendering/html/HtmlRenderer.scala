@@ -7,11 +7,10 @@ import declslides.domain.SlideElement
 import declslides.rendering.Document
 import declslides.rendering.Renderer
 import declslides.rendering.RenderingTarget
+import scalatags.Text.all._
+import scalatags.Text.tags2.section
 
 final class HtmlRenderer extends Renderer:
-
-  import scalatags.Text.all.*
-  import scalatags.Text.tags2.section
 
   private val styleTag = tag("style")
   private val titleTag = tag("title")
@@ -20,84 +19,51 @@ final class HtmlRenderer extends Renderer:
   override val target: RenderingTarget = RenderingTarget.Html
 
   override def render(presentation: Presentation): Document =
-    val theme = presentation.theme
-
     val page =
       doctype("html")(
         html(lang := "en")(
-          head(
-            meta(charset := "UTF-8"),
-            meta(
-              name := "viewport",
-              content := "width=device-width, initial-scale=1.0",
-            ),
-            titleTag(presentation.title),
-            styleTag(
-              s"""
-            body {
-              margin: 0;
-              font-family: system-ui, sans-serif;
-              background: ${theme.background};
-              color: ${theme.foreground};
-            }
-            .presentation {
-              max-width: 1100px;
-              margin: 0 auto;
-              padding: 2rem;
-            }
-            .deck-header {
-              border-bottom: 2px solid ${theme.accent};
-              margin-bottom: 2rem;
-              padding-bottom: 1rem;
-            }
-            .slide {
-              min-height: 70vh;
-              padding: 2rem 0;
-              border-bottom: 1px solid rgba(255,255,255,0.15);
-              display: flex;
-              flex-direction: column;
-              gap: 1rem;
-            }
-            .slide.centered {
-              justify-content: center;
-              align-items: center;
-              text-align: center;
-            }
-            .slide h2 {
-              color: ${theme.accent};
-              margin-bottom: 1rem;
-            }
-            pre {
-              background: ${theme.codeBackground};
-              padding: 1rem;
-              border-radius: 8px;
-              overflow-x: auto;
-            }
-            code {
-              font-family: ui-monospace, monospace;
-            }
-            ul {
-              line-height: 1.7;
-            }
-            """,
-            ),
-          ),
-          body(
-            mainTag(
-              cls := "presentation",
-              attr("data-theme") := theme.name,
-            )(
-              header(cls := "deck-header")(
-                h1(presentation.title),
-              ),
-              for (slide, index) <- presentation.slides.zipWithIndex
-              yield renderSlide(index + 1, slide),
-            ),
-          ),
+          renderHead(presentation),
+          renderBody(presentation),
         ),
       )
 
-    Document(target, page.render, "html")
+    Document(
+      target = target,
+      content = page.render,
+      fileExtension = "html",
+    )
+
+  private def renderHead(presentation: Presentation): Frag =
+    head(
+      meta(charset := "UTF-8"),
+      meta(
+        name := "viewport",
+        content := "width=device-width, initial-scale=1.0",
+      ),
+      titleTag(presentation.title),
+      styleTag(HtmlRendererStyles.render(presentation.theme)),
+    )
+
+  private def renderBody(presentation: Presentation): Frag =
+    body(
+      mainTag(
+        cls := "presentation",
+        attr("data-theme") := presentation.theme.name,
+      )(
+        renderHeader(presentation),
+        renderSlides(presentation),
+      ),
+    )
+
+  private def renderHeader(presentation: Presentation): Frag =
+    header(cls := "deck-header")(
+      h1(presentation.title),
+    )
+
+  private def renderSlides(presentation: Presentation): Seq[Frag] =
+    presentation.slides.zipWithIndex.map { case (slide, index) =>
+      renderSlide(index + 1, slide)
+    }
 
   private def renderSlide(
     number: Int,
@@ -118,7 +84,7 @@ final class HtmlRenderer extends Renderer:
 
       case SlideElement.BulletList(items) =>
         ul(
-          items.map(item => li(item)),
+          items.map(li(_)),
         )
 
       case SlideElement.CodeBlock(language, source) =>
