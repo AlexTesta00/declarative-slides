@@ -2,8 +2,8 @@ package rendering
 
 import declslides.domain._
 import declslides.dsl.DSL._
-import declslides.rendering.HtmlRenderer
 import declslides.rendering.RenderingTarget.Html
+import declslides.rendering.html.HtmlRenderer
 import org.scalatest.flatspec.AnyFlatSpec
 
 class HtmlRendererSpec extends AnyFlatSpec with RendererSpecSupport:

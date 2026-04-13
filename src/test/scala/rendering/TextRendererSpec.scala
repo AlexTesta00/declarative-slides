@@ -3,7 +3,7 @@ package rendering
 import declslides.domain.Layout
 import declslides.dsl.DSL._
 import declslides.rendering.RenderingTarget.Text
-import declslides.rendering.TextRenderer
+import declslides.rendering.text.TextRenderer
 import org.scalatest.flatspec.AnyFlatSpec
 
 class TextRendererSpec extends AnyFlatSpec with RendererSpecSupport:
