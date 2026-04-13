@@ -4,60 +4,32 @@ import declslides.domain._
 import declslides.dsl.DSL._
 import declslides.rendering.HtmlRenderer
 import declslides.rendering.RenderingTarget.Html
-import org.scalatest.EitherValues.convertEitherToValuable
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
-class HtmlRendererSpec extends AnyFlatSpec with Matchers:
+class HtmlRendererSpec extends AnyFlatSpec with RendererSpecSupport:
 
   behavior of "HtmlRenderer"
 
-  private val renderer = HtmlRenderer()
-
-  private def demoDeck(items: => PresBuild*) =
-    presentation("Demo"):
-      deck(items*)
-    .value
-
-  private def render(items: PresBuild*) =
-    renderer.render(demoDeck(items*))
-
-  private def renderedHtml(items: PresBuild*): String =
-    render(items*).content
-
-  private def singleSlideHtml(title: String = "Intro")(items: SlideBuild*)
-    : String =
-    renderedHtml(
-      slide(title):
-        content(items*),
-    )
-
-  private def singleSlideHtmlWithLayout(
-    title: String,
-    layout: Layout,
-  )(items: SlideBuild*,
-  ): String =
-    renderedHtml(
-      slide(title, layout):
-        content(items*),
-    )
+  override protected val renderer = HtmlRenderer()
 
   it should "use the html rendering target" in:
-    val document = render:
+    val document = render(
       slide("Intro"):
-        text("Hello")
+        text("Hello"),
+    )
 
     document.target shouldBe Html
 
   it should "use html as file extension" in:
-    val document = render:
+    val document = render(
       slide("Intro"):
-        text("Hello")
+        text("Hello"),
+    )
 
     document.fileExtension shouldBe "html"
 
   it should "render a valid html skeleton" in:
-    val html = singleSlideHtml():
+    val html = singleSlideContent():
       text("Hello")
 
     html should (
@@ -67,13 +39,13 @@ class HtmlRendererSpec extends AnyFlatSpec with Matchers:
     )
 
   it should "render the presentation title inside the title tag" in:
-    val html = singleSlideHtml():
+    val html = singleSlideContent():
       text("Hello")
 
     html should include("<title>Demo</title>")
 
   it should "render a section for each slide" in:
-    val html = renderedHtml(
+    val html = renderedContent(
       slide("One"):
         text("A")
       ,
@@ -87,19 +59,19 @@ class HtmlRendererSpec extends AnyFlatSpec with Matchers:
     )
 
   it should "render centered slides with a centered class" in:
-    val html = singleSlideHtmlWithLayout("Focus", Layout.Centered):
+    val html = singleSlideContentWithLayout("Focus", Layout.Centered):
       text("Important")
 
     html should include("""class="slide centered"""")
 
   it should "render paragraphs using p tags" in:
-    val html = singleSlideHtml():
+    val html = singleSlideContent():
       text("Hello")
 
     html should include("<p>Hello</p>")
 
   it should "render bullet lists using ul and li tags" in:
-    val html = singleSlideHtml("Bullets"):
+    val html = singleSlideContent("Bullets"):
       bullets("One", "Two")
 
     html should (
@@ -109,7 +81,7 @@ class HtmlRendererSpec extends AnyFlatSpec with Matchers:
     )
 
   it should "render code blocks using pre and code tags" in:
-    val html = singleSlideHtml("Code"):
+    val html = singleSlideContent("Code"):
       code("scala", "val x = 42")
 
     html should (
@@ -119,15 +91,16 @@ class HtmlRendererSpec extends AnyFlatSpec with Matchers:
     )
 
   it should "escape html-sensitive code content" in:
-    val html = renderedHtml:
+    val html = renderedContent(
       slide("Code"):
-        code("scala", """println("<tag>")""")
+        code("scala", """println("<tag>")"""),
+    )
 
     html should include("&lt;tag&gt;")
     html should not include "<tag>"
 
   it should "render paragraphs and bullet lists in the same slide" in:
-    val html = singleSlideHtml("Mixed")(
+    val html = singleSlideContent("Mixed")(
       text("Hello"),
       bullets("One", "Two"),
     )
@@ -139,7 +112,7 @@ class HtmlRendererSpec extends AnyFlatSpec with Matchers:
     )
 
   it should "include theme metadata" in:
-    val html = renderedHtml(
+    val html = renderedContent(
       theme(Theme.conference),
       slide("Intro"):
         text("Hello"),
