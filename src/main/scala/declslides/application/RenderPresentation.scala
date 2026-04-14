@@ -19,24 +19,16 @@ final class RenderPresentation(
   fileSystem: FileSystem):
 
   def run(request: RenderRequest): Either[ApplicationError, RenderResult] =
-    registry.resolve(request.presentationName) match
-      case Left(error) =>
-        Left(error)
+    for
+      presentation <- registry.resolve(request.presentationName)
+      renderer = rendererFor(request.format)
+      document = renderer.render(presentation)
+      _ <- request.outputPath match
+        case Some(path) => fileSystem.write(path, document.content)
+        case None => Right(())
+    yield RenderResult(document, request.outputPath)
 
-      case Right(presentation) =>
-        val renderer =
-          request.format match
-            case RenderFormat.Html => htmlRenderer
-            case RenderFormat.Text => textRenderer
-
-        val document =
-          renderer.render(presentation)
-
-        request.outputPath match
-          case None =>
-            Right(RenderResult(document, None))
-
-          case Some(path) =>
-            fileSystem.write(path, document.content) match
-              case Left(error) => Left(error)
-              case Right(_) => Right(RenderResult(document, Some(path)))
+  private def rendererFor(format: RenderFormat): Renderer =
+    format match
+      case RenderFormat.Html => htmlRenderer
+      case RenderFormat.Text => textRenderer
