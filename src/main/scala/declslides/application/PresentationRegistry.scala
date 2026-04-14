@@ -6,16 +6,14 @@ trait PresentationRegistry:
   def available: Vector[String]
   def resolve(name: String): Either[ApplicationError, Presentation]
 
-final class InMemoryPresentationRegistry(
+final class InMemoryPresentationRegistry private (
   entries: Map[String, Presentation]) extends PresentationRegistry:
 
-  def available: Vector[String] =
+  override def available: Vector[String] =
     entries.keys.toVector.sorted
 
-  def resolve(name: String): Either[ApplicationError, Presentation] =
-    entries.get(name) match
-      case Some(presentation) => Right(presentation)
-      case None => Left(ApplicationError.PresentationNotFound(name))
+  override def resolve(name: String): Either[ApplicationError, Presentation] =
+    entries.get(name).toRight(ApplicationError.PresentationNotFound(name))
 
 object InMemoryPresentationRegistry:
 
