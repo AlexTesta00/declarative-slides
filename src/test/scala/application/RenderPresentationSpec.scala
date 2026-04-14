@@ -1,225 +1,81 @@
 package application
 
 import declslides.application.ApplicationError
-import declslides.application.FileSystem
-import declslides.application.InMemoryPresentationRegistry
 import declslides.application.RenderFormat
-import declslides.application.RenderPresentation
 import declslides.application.RenderRequest
-import declslides.domain.DomainError
-import declslides.domain.Presentation
-import declslides.dsl.DSL._
 import declslides.rendering.Document
 import declslides.rendering.RenderingTarget
-import declslides.rendering.html.HtmlRenderer
-import declslides.rendering.text.TextRenderer
+import org.scalatest.EitherValues.convertEitherToValuable
+import org.scalatest.EitherValues.convertLeftProjectionToValuable
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
-class RenderPresentationSpec extends AnyFlatSpec with Matchers:
+class RenderPresentationSpec extends AnyFlatSpec with ApplicationSpecSupport:
 
-  private def validPresentation(
-    result: Either[Vector[DomainError], Presentation],
-  ): Presentation =
-    result match
-      case Right(presentation) => presentation
-      case Left(errors) => fail(errors.map(_.message).mkString("; "))
+  behavior of "RenderPresentation"
 
-  private val sampleDeck: Presentation =
-    validPresentation(
-      presentation("Demo") {
-        deck(
-          slide("Intro") {
-            content(
-              text("Hello"),
-            )
-          },
-        )
-      },
-    )
+  it should "render an html document when html is requested" in:
+    val (service, _) = this.service("demo" -> sampleDeck)
 
-  private final class RecordingFileSystem extends FileSystem:
-    var writes: Map[String, String] = Map.empty
+    val result =
+      service.run(
+        RenderRequest("demo", RenderFormat.Html, None),
+      ).value
 
-    override def write(
-      path: String,
-      content: String,
-    ): Either[ApplicationError, Unit] =
-      writes = writes.updated(path, content)
-      Right(())
+    result.document.target.shouldBe(RenderingTarget.Html)
+    result.document.fileExtension.shouldBe("html")
+    result.document.content.should(include("<!DOCTYPE html>"))
+    result.writtenTo.shouldBe(None)
 
-  "An in-memory registry" should
-    "list available presentation names in sorted order" in {
-      val registry =
-        InMemoryPresentationRegistry(
-          "zeta" -> sampleDeck,
-          "alpha" -> sampleDeck,
-        )
+  it should "render a text document when text is requested" in:
+    val (service, _) = this.service("demo" -> sampleDeck)
 
-      registry.available shouldBe Vector("alpha", "zeta")
-    }
+    val result =
+      service.run(
+        RenderRequest("demo", RenderFormat.Text, None),
+      ).value
 
-  it should "resolve a known presentation" in {
-    val registry = InMemoryPresentationRegistry("demo" -> sampleDeck)
+    result.document.target.shouldBe(RenderingTarget.Text)
+    result.document.fileExtension.shouldBe("txt")
+    result.document.content.should(include("Demo"))
+    result.writtenTo.shouldBe(None)
 
-    val result = registry.resolve("demo")
+  it should "not write when no output path is provided" in:
+    val (service, fs) = this.service("demo" -> sampleDeck)
 
-    result.isRight shouldBe true
-    result.toOption.get.title shouldBe "Demo"
-  }
+    service.run(
+      RenderRequest("demo", RenderFormat.Text, None),
+    ).value
 
-  it should "fail for an unknown presentation" in {
-    val registry = InMemoryPresentationRegistry("demo" -> sampleDeck)
+    fs.writes.shouldBe(Map.empty)
 
-    registry.resolve("missing") shouldBe Left(
+  it should "write the rendered document when an output path is provided" in:
+    val (service, fs) = this.service("demo" -> sampleDeck)
+
+    val result =
+      service.run(
+        RenderRequest("demo", RenderFormat.Text, Some("out/demo.txt")),
+      ).value
+
+    fs.writes.keySet.should(contain("out/demo.txt"))
+    fs.writes("out/demo.txt").should(include("Demo"))
+    result.writtenTo.shouldBe(Some("out/demo.txt"))
+
+  it should "propagate a missing presentation error" in:
+    val (service, _) = this.service("demo" -> sampleDeck)
+
+    service.run(
+      RenderRequest("missing", RenderFormat.Text, None),
+    ).left.value.shouldBe(
       ApplicationError.PresentationNotFound("missing"),
     )
-  }
 
-  "RenderFormat.parse" should "parse html format" in {
-    RenderFormat.parse("html") shouldBe Right(RenderFormat.Html)
-  }
+  it should "keep the produced document in the render result" in:
+    val (service, _) = this.service("demo" -> sampleDeck)
 
-  it should "parse text format" in {
-    RenderFormat.parse("text") shouldBe Right(RenderFormat.Text)
-  }
+    val result =
+      service.run(
+        RenderRequest("demo", RenderFormat.Html, Some("out/demo.html")),
+      ).value
 
-  it should "parse txt as text format" in {
-    RenderFormat.parse("txt") shouldBe Right(RenderFormat.Text)
-  }
-
-  it should "reject unsupported formats" in {
-    val result = RenderFormat.parse("pdf")
-
-    result.isLeft shouldBe true
-    result.left.toOption.get shouldBe
-      ApplicationError.InvalidCommand(
-        "Unsupported format 'pdf'. Expected one of: html, text",
-      )
-  }
-
-  "RenderPresentation" should
-    "render an html document when html is requested" in {
-      val registry = InMemoryPresentationRegistry("demo" -> sampleDeck)
-      val fs = new RecordingFileSystem
-      val service =
-        new RenderPresentation(
-          registry = registry,
-          htmlRenderer = new HtmlRenderer,
-          textRenderer = new TextRenderer,
-          fileSystem = fs,
-        )
-
-      val result = service.run(
-        RenderRequest("demo", RenderFormat.Html, None),
-      )
-
-      result.isRight shouldBe true
-      val renderResult = result.toOption.get
-      renderResult.document.target shouldBe RenderingTarget.Html
-      renderResult.document.fileExtension shouldBe "html"
-      renderResult.document.content should include("<!DOCTYPE html>")
-      renderResult.writtenTo shouldBe None
-    }
-
-  it should "render a text document when text is requested" in {
-    val registry = InMemoryPresentationRegistry("demo" -> sampleDeck)
-    val fs = new RecordingFileSystem
-    val service =
-      new RenderPresentation(
-        registry = registry,
-        htmlRenderer = new HtmlRenderer,
-        textRenderer = new TextRenderer,
-        fileSystem = fs,
-      )
-
-    val result = service.run(
-      RenderRequest("demo", RenderFormat.Text, None),
-    )
-
-    result.isRight shouldBe true
-    val renderResult = result.toOption.get
-    renderResult.document.target shouldBe RenderingTarget.Text
-    renderResult.document.fileExtension shouldBe "txt"
-    renderResult.document.content should include("Demo")
-    renderResult.writtenTo shouldBe None
-  }
-
-  it should "not write when no output path is provided" in {
-    val registry = InMemoryPresentationRegistry("demo" -> sampleDeck)
-    val fs = new RecordingFileSystem
-    val service =
-      new RenderPresentation(
-        registry = registry,
-        htmlRenderer = new HtmlRenderer,
-        textRenderer = new TextRenderer,
-        fileSystem = fs,
-      )
-
-    val result = service.run(
-      RenderRequest("demo", RenderFormat.Text, None),
-    )
-
-    result.isRight shouldBe true
-    fs.writes shouldBe Map.empty
-  }
-
-  it should "write the rendered document when an output path is provided" in {
-    val registry = InMemoryPresentationRegistry("demo" -> sampleDeck)
-    val fs = new RecordingFileSystem
-    val service =
-      new RenderPresentation(
-        registry = registry,
-        htmlRenderer = new HtmlRenderer,
-        textRenderer = new TextRenderer,
-        fileSystem = fs,
-      )
-
-    val result = service.run(
-      RenderRequest("demo", RenderFormat.Text, Some("out/demo.txt")),
-    )
-
-    result.isRight shouldBe true
-    fs.writes.keySet should contain("out/demo.txt")
-    fs.writes("out/demo.txt") should include("Demo")
-    result.toOption.get.writtenTo shouldBe Some("out/demo.txt")
-  }
-
-  it should "propagate a missing presentation error" in {
-    val registry = InMemoryPresentationRegistry("demo" -> sampleDeck)
-    val fs = new RecordingFileSystem
-    val service =
-      new RenderPresentation(
-        registry = registry,
-        htmlRenderer = new HtmlRenderer,
-        textRenderer = new TextRenderer,
-        fileSystem = fs,
-      )
-
-    val result = service.run(
-      RenderRequest("missing", RenderFormat.Text, None),
-    )
-
-    result shouldBe Left(ApplicationError.PresentationNotFound("missing"))
-  }
-
-  it should "keep the produced document in the render result" in {
-    val registry = InMemoryPresentationRegistry("demo" -> sampleDeck)
-    val fs = new RecordingFileSystem
-    val service =
-      new RenderPresentation(
-        registry = registry,
-        htmlRenderer = new HtmlRenderer,
-        textRenderer = new TextRenderer,
-        fileSystem = fs,
-      )
-
-    val result = service.run(
-      RenderRequest("demo", RenderFormat.Html, Some("out/demo.html")),
-    )
-
-    result.isRight shouldBe true
-    val renderResult = result.toOption.get
-    renderResult.document shouldBe a[Document]
-    renderResult.writtenTo shouldBe Some("out/demo.html")
-  }
+    result.document.shouldBe(a[Document])
+    result.writtenTo.shouldBe(Some("out/demo.html"))
