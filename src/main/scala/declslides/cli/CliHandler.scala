@@ -3,14 +3,7 @@ package declslides.cli
 import declslides.application.PresentationRegistry
 import declslides.application.RenderPresentation
 import declslides.application.RenderRequest
-
-trait OutputPort:
-  def writeLine(line: String): Unit
-
-object StdOutput extends OutputPort:
-
-  override def writeLine(line: String): Unit =
-    println(line)
+import declslides.rendering.RenderingTarget
 
 final class CliHandler(
   registry: PresentationRegistry,
@@ -20,34 +13,35 @@ final class CliHandler(
   def handle(command: CliCommand): Int =
     command match
       case CliCommand.Help =>
-        output.writeLine(CliHandler.helpText)
-        0
+        showHelp()
 
       case CliCommand.ListPresentations =>
-        output.writeLine("Available presentations:")
-        registry.available.foreach(name => output.writeLine(s"- $name"))
-        0
+        showAvailablePresentations()
 
       case CliCommand.Render(name, format) =>
-        renderPresentation.run(RenderRequest(name, format, None)) match
-          case Right(result) =>
-            output.writeLine(
-              s"Rendered '$name' as ${format.toString.toLowerCase}.",
-            )
-            output.writeLine(result.document.content)
-            0
+        renderPresentationToOutput(name, format)
 
-          case Left(error) =>
-            output.writeLine(s"Error: ${error.message}")
-            1
+  private def showHelp(): Int =
+    output.writeLine(CliMessages.helpText)
+    CliExitCode.Success
 
-object CliHandler:
+  private def showAvailablePresentations(): Int =
+    output.writeLine(CliMessages.availablePresentationsHeader)
+    registry.available.foreach { name =>
+      output.writeLine(s"${CliMessages.presentationBulletPrefix}$name")
+    }
+    CliExitCode.Success
 
-  val helpText: String =
-    """Declarative-Slides CLI
-      |
-      |Commands:
-      |  help
-      |  list
-      |  render <presentation-name> <html|text>
-      |""".stripMargin
+  private def renderPresentationToOutput(
+    name: String,
+    format: RenderingTarget,
+  ): Int =
+    renderPresentation.run(RenderRequest(name, format, None)) match
+      case Right(result) =>
+        output.writeLine(CliMessages.renderSuccessMessage(name, format))
+        output.writeLine(result.document.content)
+        CliExitCode.Success
+
+      case Left(error) =>
+        output.writeLine(CliMessages.renderErrorMessage(error.message))
+        CliExitCode.Failure
