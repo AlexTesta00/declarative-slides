@@ -2,10 +2,13 @@ package declslides.application
 
 import declslides.rendering.Document
 import declslides.rendering.Renderer
+import declslides.rendering.RenderingTarget
+import declslides.rendering.RenderingTarget.Html
+import declslides.rendering.RenderingTarget.Text
 
 final case class RenderRequest(
   presentationName: String,
-  format: RenderFormat,
+  format: RenderingTarget,
   outputPath: Option[String])
 
 final case class RenderResult(
@@ -28,7 +31,7 @@ final class RenderPresentation(
         case None => Right(())
     yield RenderResult(document, request.outputPath)
 
-  private def rendererFor(format: RenderFormat): Renderer =
+  private def rendererFor(format: RenderingTarget): Renderer =
     format match
-      case RenderFormat.Html => htmlRenderer
-      case RenderFormat.Text => textRenderer
+      case Html => htmlRenderer
+      case Text => textRenderer

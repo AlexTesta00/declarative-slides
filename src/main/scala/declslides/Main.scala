@@ -3,7 +3,6 @@ package declslides
 import declslides.application.ApplicationError
 import declslides.application.FileSystem
 import declslides.application.InMemoryPresentationRegistry
-import declslides.application.RenderFormat
 import declslides.application.RenderPresentation
 import declslides.application.RenderRequest
 import declslides.domain.DomainError
@@ -11,6 +10,8 @@ import declslides.domain.Layout
 import declslides.domain.Presentation
 import declslides.domain.Theme
 import declslides.dsl.DSL._
+import declslides.rendering.RenderingTarget.Html
+import declslides.rendering.RenderingTarget.Text
 import declslides.rendering.html.HtmlRenderer
 import declslides.rendering.text.TextRenderer
 
@@ -118,7 +119,7 @@ object Main:
           service,
           RenderRequest(
             presentationName = "my-presentation",
-            format = RenderFormat.Html,
+            format = Html,
             outputPath = Some("out/my-presentation.html"),
           ),
           "HTML",
@@ -128,7 +129,7 @@ object Main:
           service,
           RenderRequest(
             presentationName = "my-presentation",
-            format = RenderFormat.Text,
+            format = Text,
             outputPath = Some("out/my-presentation.txt"),
           ),
           "Text",

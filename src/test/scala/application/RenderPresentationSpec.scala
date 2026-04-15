@@ -1,10 +1,11 @@
 package application
 
 import declslides.application.ApplicationError
-import declslides.application.RenderFormat
 import declslides.application.RenderRequest
 import declslides.rendering.Document
 import declslides.rendering.RenderingTarget
+import declslides.rendering.RenderingTarget.Html
+import declslides.rendering.RenderingTarget.Text
 import org.scalatest.EitherValues.convertEitherToValuable
 import org.scalatest.EitherValues.convertLeftProjectionToValuable
 import org.scalatest.flatspec.AnyFlatSpec
@@ -18,7 +19,7 @@ class RenderPresentationSpec extends AnyFlatSpec with ApplicationSpecSupport:
 
     val result =
       service.run(
-        RenderRequest("demo", RenderFormat.Html, None),
+        RenderRequest("demo", Html, None),
       ).value
 
     result.document.target.shouldBe(RenderingTarget.Html)
@@ -31,7 +32,7 @@ class RenderPresentationSpec extends AnyFlatSpec with ApplicationSpecSupport:
 
     val result =
       service.run(
-        RenderRequest("demo", RenderFormat.Text, None),
+        RenderRequest("demo", Text, None),
       ).value
 
     result.document.target.shouldBe(RenderingTarget.Text)
@@ -43,7 +44,7 @@ class RenderPresentationSpec extends AnyFlatSpec with ApplicationSpecSupport:
     val (service, fs) = this.service("demo" -> sampleDeck)
 
     service.run(
-      RenderRequest("demo", RenderFormat.Text, None),
+      RenderRequest("demo", Text, None),
     ).value
 
     fs.writes.shouldBe(Map.empty)
@@ -53,7 +54,7 @@ class RenderPresentationSpec extends AnyFlatSpec with ApplicationSpecSupport:
 
     val result =
       service.run(
-        RenderRequest("demo", RenderFormat.Text, Some("out/demo.txt")),
+        RenderRequest("demo", Text, Some("out/demo.txt")),
       ).value
 
     fs.writes.keySet.should(contain("out/demo.txt"))
@@ -64,7 +65,7 @@ class RenderPresentationSpec extends AnyFlatSpec with ApplicationSpecSupport:
     val (service, _) = this.service("demo" -> sampleDeck)
 
     service.run(
-      RenderRequest("missing", RenderFormat.Text, None),
+      RenderRequest("missing", Text, None),
     ).left.value.shouldBe(
       ApplicationError.PresentationNotFound("missing"),
     )
@@ -74,7 +75,7 @@ class RenderPresentationSpec extends AnyFlatSpec with ApplicationSpecSupport:
 
     val result =
       service.run(
-        RenderRequest("demo", RenderFormat.Html, Some("out/demo.html")),
+        RenderRequest("demo", Html, Some("out/demo.html")),
       ).value
 
     result.document.shouldBe(a[Document])
