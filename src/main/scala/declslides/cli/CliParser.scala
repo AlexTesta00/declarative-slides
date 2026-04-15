@@ -1,12 +1,16 @@
 package declslides.cli
 
 import declslides.application.ApplicationError
-import declslides.rendering.RenderingTarget
+import declslides.rendering.RendererRegistry
 
-object CliParser:
+final class CliParser(
+  rendererRegistry: RendererRegistry):
 
-  private val usageMessage =
-    s"Usage: list | help | render <presentation-name> <${RenderingTarget.supportedLabels.mkString("|")}>"
+  private def usageMessage: String =
+    s"Usage: list | help | render <presentation-name> <${rendererRegistry.supportedLabels.mkString("|")}>"
+
+  private def unsupportedFormatMessage(raw: String): String =
+    s"Unsupported format '$raw'. Expected one of: ${rendererRegistry.supportedLabels.mkString(", ")}"
 
   def parse(args: List[String]): Either[ApplicationError, CliCommand] =
     args match
@@ -19,8 +23,19 @@ object CliParser:
       case "list" :: Nil =>
         Right(CliCommand.ListPresentations)
 
-      case "render" :: name :: format :: Nil =>
-        RenderingTarget.parse(format).map(CliCommand.Render(name, _))
+      case "render" :: name :: rawFormat :: Nil =>
+        rendererRegistry
+          .parse(rawFormat)
+          .toRight(
+            ApplicationError.InvalidCommand(
+              unsupportedFormatMessage(rawFormat),
+            ),
+          )
+          .map(CliCommand.Render(name, _))
 
       case _ =>
-        Left(ApplicationError.InvalidCommand(usageMessage))
+        Left(
+          ApplicationError.InvalidCommand(
+            usageMessage,
+          ),
+        )

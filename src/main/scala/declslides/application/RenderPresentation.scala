@@ -1,14 +1,13 @@
 package declslides.application
 
 import declslides.rendering.Document
+import declslides.rendering.RenderFormat
 import declslides.rendering.Renderer
-import declslides.rendering.RenderingTarget
-import declslides.rendering.RenderingTarget.Html
-import declslides.rendering.RenderingTarget.Text
+import declslides.rendering.RendererRegistry
 
 final case class RenderRequest(
   presentationName: String,
-  format: RenderingTarget,
+  format: RenderFormat,
   outputPath: Option[String])
 
 final case class RenderResult(
@@ -17,21 +16,25 @@ final case class RenderResult(
 
 final class RenderPresentation(
   registry: PresentationRegistry,
-  htmlRenderer: Renderer,
-  textRenderer: Renderer,
+  rendererRegistry: RendererRegistry,
   fileSystem: FileSystem):
 
   def run(request: RenderRequest): Either[ApplicationError, RenderResult] =
     for
       presentation <- registry.resolve(request.presentationName)
-      renderer = rendererFor(request.format)
+      renderer <- rendererFor(request.format)
       document = renderer.render(presentation)
       _ <- request.outputPath match
         case Some(path) => fileSystem.write(path, document.content)
         case None => Right(())
     yield RenderResult(document, request.outputPath)
 
-  private def rendererFor(format: RenderingTarget): Renderer =
-    format match
-      case Html => htmlRenderer
-      case Text => textRenderer
+  private def rendererFor(format: RenderFormat)
+    : Either[ApplicationError, Renderer] =
+    rendererRegistry
+      .resolve(format)
+      .toRight(
+        ApplicationError.InvalidCommand(
+          s"No renderer available for format '${format.label}'",
+        ),
+      )

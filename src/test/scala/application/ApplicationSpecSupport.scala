@@ -6,6 +6,7 @@ import declslides.application.InMemoryPresentationRegistry
 import declslides.application.RenderPresentation
 import declslides.domain.Presentation
 import declslides.dsl.DSL._
+import declslides.rendering.RendererRegistry
 import declslides.rendering.html.HtmlRenderer
 import declslides.rendering.text.TextRenderer
 import org.scalatest.EitherValues.convertEitherToValuable
@@ -36,14 +37,20 @@ trait ApplicationSpecSupport extends Matchers:
   protected def registry(entries: (String, Presentation)*) =
     InMemoryPresentationRegistry(entries*)
 
-  protected def service(entries: (String, Presentation)*)
-    : (RenderPresentation, RecordingFileSystem) =
+  protected def rendererRegistry(): RendererRegistry =
+    RendererRegistry(
+      new HtmlRenderer,
+      new TextRenderer,
+    )
+
+  protected def service(
+    entries: (String, Presentation)*,
+  ): (RenderPresentation, RecordingFileSystem) =
     val fs = new RecordingFileSystem
     val renderPresentation =
       new RenderPresentation(
         registry = registry(entries*),
-        htmlRenderer = new HtmlRenderer,
-        textRenderer = new TextRenderer,
+        rendererRegistry = rendererRegistry(),
         fileSystem = fs,
       )
 

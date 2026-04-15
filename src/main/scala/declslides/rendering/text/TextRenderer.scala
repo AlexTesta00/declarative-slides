@@ -3,26 +3,34 @@ package declslides.rendering.text
 import declslides.domain.Presentation
 import declslides.domain.Slide
 import declslides.domain.SlideElement
-import declslides.rendering.Body
 import declslides.rendering.Document
+import declslides.rendering.RenderFormat
 import declslides.rendering.Renderer
-import declslides.rendering.RenderingTarget
+
+object TextRenderer:
+
+  val Target: RenderFormat =
+    RenderFormat(
+      label = "text",
+      fileExtension = "txt",
+      acceptedInputs = Set("text", "txt"),
+    )
 
 final class TextRenderer extends Renderer:
 
-  override val target: RenderingTarget = RenderingTarget.Text
+  override val target: RenderFormat =
+    TextRenderer.Target
 
   override def render(presentation: Presentation): Document =
     Document(
       target = target,
       content = renderContent(presentation),
-      fileExtension = "txt",
     )
 
-  private def renderContent(presentation: Presentation): Body =
+  private def renderContent(presentation: Presentation): String =
     Seq(
-      TextRendererFormatting.renderTitle(presentation),
-      TextRendererFormatting.renderTheme(presentation),
+      presentation.title,
+      s"Theme: ${presentation.theme.name}",
       "",
       renderSlides(presentation),
     ).mkString("\n")
@@ -37,7 +45,7 @@ final class TextRenderer extends Renderer:
     number: Int,
   ): String =
     val lines =
-      TextRendererFormatting.renderSlideHeader(slide, number) +:
+      s"[$number] ${slide.title} (${slide.layout})" +:
         slide.elements.flatMap(renderElementLines)
 
     lines.mkString("\n")
@@ -45,13 +53,17 @@ final class TextRenderer extends Renderer:
   private def renderElementLines(element: SlideElement): Seq[String] =
     element match
       case SlideElement.Paragraph(value) =>
-        TextRendererFormatting.renderParagraph(value)
+        Seq(value)
 
       case SlideElement.BulletList(items) =>
-        TextRendererFormatting.renderBulletList(items)
+        items.map(item => s"- $item")
 
       case SlideElement.CodeBlock(language, source) =>
-        TextRendererFormatting.renderCodeBlock(language, source)
+        Seq(
+          s"```$language",
+          source,
+          "```",
+        )
 
       case SlideElement.Spacer(lines) =>
-        TextRendererFormatting.renderSpacer(lines)
+        List.fill(lines)("")

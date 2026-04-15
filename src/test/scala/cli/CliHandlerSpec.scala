@@ -8,11 +8,11 @@ import declslides.cli.CliCommand
 import declslides.cli.CliExitCode.Failure
 import declslides.cli.CliExitCode.Success
 import declslides.cli.CliHandler
+import declslides.cli.CliMessages
 import declslides.cli.OutputPort
 import declslides.domain.Presentation
 import declslides.dsl.DSL._
-import declslides.rendering.RenderingTarget.Html
-import declslides.rendering.RenderingTarget.Text
+import declslides.rendering.RendererRegistry
 import declslides.rendering.html.HtmlRenderer
 import declslides.rendering.text.TextRenderer
 import org.scalatest.EitherValues.convertEitherToValuable
@@ -23,6 +23,8 @@ class CliHandlerSpec extends AnyFlatSpec with Matchers:
 
   behavior of "CliHandler"
 
+  private val presentationName = "demo"
+
   private val sampleDeck: Presentation =
     presentation("Demo"):
       deck(
@@ -32,6 +34,15 @@ class CliHandlerSpec extends AnyFlatSpec with Matchers:
           ),
       )
     .value
+
+  private val rendererRegistry =
+    RendererRegistry(
+      new HtmlRenderer,
+      new TextRenderer,
+    )
+
+  private val htmlFormat = HtmlRenderer.Target
+  private val textFormat = TextRenderer.Target
 
   private final class RecordingOutput extends OutputPort:
     var lines: Vector[String] = Vector.empty
@@ -44,67 +55,95 @@ class CliHandlerSpec extends AnyFlatSpec with Matchers:
 
   private def handlerWith(output: RecordingOutput): CliHandler =
     val presentationRegistry: PresentationRegistry =
-      registry("demo" -> sampleDeck)
+      registry(presentationName -> sampleDeck)
 
     val renderPresentation =
       new RenderPresentation(
         registry = presentationRegistry,
-        htmlRenderer = new HtmlRenderer,
-        textRenderer = new TextRenderer,
+        rendererRegistry = rendererRegistry,
         fileSystem = FileSystem.noop,
       )
 
     new CliHandler(
-      registry = presentationRegistry,
+      presentationRegistry = presentationRegistry,
       renderPresentation = renderPresentation,
+      rendererRegistry = rendererRegistry,
       output = output,
     )
 
-  it should "print help text" in:
+  private def outputAndHandler(): (RecordingOutput, CliHandler) =
     val output = new RecordingOutput
-    val handler = handlerWith(output)
+    (output, handlerWith(output))
+
+  private def containsLine(
+    output: RecordingOutput,
+    value: String,
+  ): Boolean =
+    output.lines.contains(value)
+
+  private def containsFragment(
+    output: RecordingOutput,
+    value: String,
+  ): Boolean =
+    output.lines.exists(_.contains(value))
+
+  it should "print help text" in:
+    val (output, handler) = outputAndHandler()
 
     val exitCode = handler.handle(CliCommand.Help)
 
     exitCode.shouldBe(Success)
-    output.lines.exists(_.contains("Commands:")).shouldBe(true)
+    containsLine(output, CliMessages.helpText(rendererRegistry)).shouldBe(true)
 
   it should "list available presentations" in:
-    val output = new RecordingOutput
-    val handler = handlerWith(output)
+    val (output, handler) = outputAndHandler()
 
     val exitCode = handler.handle(CliCommand.ListPresentations)
 
     exitCode.shouldBe(Success)
-    output.lines.should(contain("Available presentations:"))
-    output.lines.exists(_.contains("demo")).shouldBe(true)
+    containsLine(
+      output,
+      CliMessages.availablePresentationsHeader,
+    ).shouldBe(true)
+    containsLine(
+      output,
+      s"${CliMessages.presentationBulletPrefix}$presentationName",
+    ).shouldBe(true)
 
   it should "render a presentation to stdout in text format" in:
-    val output = new RecordingOutput
-    val handler = handlerWith(output)
+    val (output, handler) = outputAndHandler()
 
-    val exitCode = handler.handle(CliCommand.Render("demo", Text))
+    val exitCode =
+      handler.handle(CliCommand.Render(presentationName, textFormat))
 
     exitCode.shouldBe(Success)
-    output.lines.exists(_.contains("Rendered 'demo' as text.")).shouldBe(true)
-    output.lines.exists(_.contains("Demo")).shouldBe(true)
-    output.lines.exists(_.contains("[1] Intro")).shouldBe(true)
+    containsLine(
+      output,
+      CliMessages.renderSuccessMessage(presentationName, textFormat),
+    ).shouldBe(true)
+    containsFragment(output, sampleDeck.title).shouldBe(true)
+    containsFragment(output, "[1] Intro").shouldBe(true)
 
   it should "render a presentation to stdout in html format" in:
-    val output = new RecordingOutput
-    val handler = handlerWith(output)
+    val (output, handler) = outputAndHandler()
 
-    val exitCode = handler.handle(CliCommand.Render("demo", Html))
+    val exitCode =
+      handler.handle(CliCommand.Render(presentationName, htmlFormat))
 
     exitCode.shouldBe(Success)
-    output.lines.exists(_.contains("Rendered 'demo' as html.")).shouldBe(true)
-    output.lines.exists(_.contains("<!DOCTYPE html>")).shouldBe(true)
+    containsLine(
+      output,
+      CliMessages.renderSuccessMessage(presentationName, htmlFormat),
+    ).shouldBe(true)
+    containsFragment(output, "<!DOCTYPE html>").shouldBe(true)
 
   it should "return a non-zero exit code when rendering fails" in:
-    val output = new RecordingOutput
-    val handler = handlerWith(output)
+    val (output, handler) = outputAndHandler()
 
-    val exitCode = handler.handle(CliCommand.Render("missing", Text))
+    val exitCode = handler.handle(CliCommand.Render("missing", textFormat))
 
     exitCode.shouldBe(Failure)
-    output.lines.exists(_.startsWith("Error:")).shouldBe(true)
+    containsLine(
+      output,
+      CliMessages.renderErrorMessage("Presentation 'missing' was not found"),
+    ).shouldBe(true)

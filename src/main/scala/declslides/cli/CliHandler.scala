@@ -3,11 +3,13 @@ package declslides.cli
 import declslides.application.PresentationRegistry
 import declslides.application.RenderPresentation
 import declslides.application.RenderRequest
-import declslides.rendering.RenderingTarget
+import declslides.rendering.RenderFormat
+import declslides.rendering.RendererRegistry
 
 final class CliHandler(
-  registry: PresentationRegistry,
+  presentationRegistry: PresentationRegistry,
   renderPresentation: RenderPresentation,
+  rendererRegistry: RendererRegistry,
   output: OutputPort):
 
   def handle(command: CliCommand): Int =
@@ -22,19 +24,19 @@ final class CliHandler(
         renderPresentationToOutput(name, format)
 
   private def showHelp(): Int =
-    output.writeLine(CliMessages.helpText)
+    output.writeLine(CliMessages.helpText(rendererRegistry))
     CliExitCode.Success
 
   private def showAvailablePresentations(): Int =
     output.writeLine(CliMessages.availablePresentationsHeader)
-    registry.available.foreach { name =>
+    presentationRegistry.available.foreach { name =>
       output.writeLine(s"${CliMessages.presentationBulletPrefix}$name")
     }
     CliExitCode.Success
 
   private def renderPresentationToOutput(
     name: String,
-    format: RenderingTarget,
+    format: RenderFormat,
   ): Int =
     renderPresentation.run(RenderRequest(name, format, None)) match
       case Right(result) =>

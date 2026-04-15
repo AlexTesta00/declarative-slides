@@ -5,10 +5,19 @@ import declslides.domain.Presentation
 import declslides.domain.Slide
 import declslides.domain.SlideElement
 import declslides.rendering.Document
+import declslides.rendering.RenderFormat
 import declslides.rendering.Renderer
-import declslides.rendering.RenderingTarget
 import scalatags.Text.all._
 import scalatags.Text.tags2.section
+
+object HtmlRenderer:
+
+  val Target: RenderFormat =
+    RenderFormat(
+      label = "html",
+      fileExtension = "html",
+      acceptedInputs = Set("html"),
+    )
 
 final class HtmlRenderer extends Renderer:
 
@@ -16,7 +25,8 @@ final class HtmlRenderer extends Renderer:
   private val titleTag = tag("title")
   private val mainTag = tag("main")
 
-  override val target: RenderingTarget = RenderingTarget.Html
+  override val target: RenderFormat =
+    HtmlRenderer.Target
 
   override def render(presentation: Presentation): Document =
     val page =
@@ -30,7 +40,6 @@ final class HtmlRenderer extends Renderer:
     Document(
       target = target,
       content = page.render,
-      fileExtension = "html",
     )
 
   private def renderHead(presentation: Presentation): Frag =
@@ -50,20 +59,14 @@ final class HtmlRenderer extends Renderer:
         cls := "presentation",
         attr("data-theme") := presentation.theme.name,
       )(
-        renderHeader(presentation),
-        renderSlides(presentation),
+        header(cls := "deck-header")(
+          h1(presentation.title),
+        ),
+        presentation.slides.zipWithIndex.map { case (slide, index) =>
+          renderSlide(index + 1, slide)
+        },
       ),
     )
-
-  private def renderHeader(presentation: Presentation): Frag =
-    header(cls := "deck-header")(
-      h1(presentation.title),
-    )
-
-  private def renderSlides(presentation: Presentation): Seq[Frag] =
-    presentation.slides.zipWithIndex.map { case (slide, index) =>
-      renderSlide(index + 1, slide)
-    }
 
   private def renderSlide(
     number: Int,

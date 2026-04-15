@@ -3,9 +3,9 @@ package cli
 import declslides.application.ApplicationError
 import declslides.cli.CliCommand
 import declslides.cli.CliParser
-import declslides.rendering.RenderingTarget
-import declslides.rendering.RenderingTarget.Html
-import declslides.rendering.RenderingTarget.Text
+import declslides.rendering.RendererRegistry
+import declslides.rendering.html.HtmlRenderer
+import declslides.rendering.text.TextRenderer
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -13,11 +13,23 @@ class CliParserSpec extends AnyFlatSpec with Matchers:
 
   behavior of "CliParser"
 
+  private val rendererRegistry =
+    RendererRegistry(
+      new HtmlRenderer,
+      new TextRenderer,
+    )
+
+  private val parser =
+    new CliParser(rendererRegistry)
+
+  private val htmlFormat = HtmlRenderer.Target
+  private val textFormat = TextRenderer.Target
+
   private def parse(args: String*) =
-    CliParser.parse(args.toList)
+    parser.parse(args.toList)
 
   private val supportedFormats =
-    RenderingTarget.supportedLabels.mkString("|")
+    rendererRegistry.supportedLabels.mkString("|")
 
   private val usageError =
     Left(
@@ -29,7 +41,7 @@ class CliParserSpec extends AnyFlatSpec with Matchers:
   private def unsupportedFormatError(raw: String) =
     Left(
       ApplicationError.InvalidCommand(
-        s"Unsupported format '$raw'. Expected one of: ${RenderingTarget.supportedLabels.mkString(", ")}",
+        s"Unsupported format '$raw'. Expected one of: ${rendererRegistry.supportedLabels.mkString(", ")}",
       ),
     )
 
@@ -44,17 +56,17 @@ class CliParserSpec extends AnyFlatSpec with Matchers:
 
   it should "parse the render command in html format" in:
     parse("render", "demo", "html").shouldBe(
-      Right(CliCommand.Render("demo", Html)),
+      Right(CliCommand.Render("demo", htmlFormat)),
     )
 
   it should "parse the render command in text format" in:
     parse("render", "demo", "text").shouldBe(
-      Right(CliCommand.Render("demo", Text)),
+      Right(CliCommand.Render("demo", textFormat)),
     )
 
   it should "accept txt as an alias for text" in:
     parse("render", "demo", "txt").shouldBe(
-      Right(CliCommand.Render("demo", Text)),
+      Right(CliCommand.Render("demo", textFormat)),
     )
 
   it should "reject unsupported formats" in:

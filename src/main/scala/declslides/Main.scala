@@ -3,15 +3,20 @@ package declslides
 import declslides.application.ApplicationError
 import declslides.application.FileSystem
 import declslides.application.InMemoryPresentationRegistry
+import declslides.application.PresentationRegistry
 import declslides.application.RenderPresentation
-import declslides.application.RenderRequest
+import declslides.cli.CliExitCode
+import declslides.cli.CliHandler
+import declslides.cli.CliMessages
+import declslides.cli.CliParser
+import declslides.cli.OutputPort
+import declslides.cli.StdOutput
 import declslides.domain.DomainError
 import declslides.domain.Layout
 import declslides.domain.Presentation
 import declslides.domain.Theme
 import declslides.dsl.DSL._
-import declslides.rendering.RenderingTarget.Html
-import declslides.rendering.RenderingTarget.Text
+import declslides.rendering.RendererRegistry
 import declslides.rendering.html.HtmlRenderer
 import declslides.rendering.text.TextRenderer
 
@@ -20,6 +25,8 @@ import java.nio.file.Files
 import java.nio.file.Paths
 
 object Main:
+
+  private val presentationName = "my-presentation"
 
   private object LocalFileSystem extends FileSystem:
 
@@ -30,7 +37,8 @@ object Main:
       try
         val outputPath = Paths.get(path)
 
-        Option(outputPath.getParent).foreach(Files.createDirectories(_))
+        Option(outputPath.getParent)
+          .foreach(parent => Files.createDirectories(parent))
 
         Files.writeString(outputPath, content, StandardCharsets.UTF_8)
         Right(())
@@ -39,28 +47,27 @@ object Main:
           Left(
             ApplicationError.WriteFailure(
               path,
-              Option(
-                exception.getMessage,
-              ).getOrElse(exception.getClass.getSimpleName),
+              Option(exception.getMessage)
+                .getOrElse(exception.getClass.getSimpleName),
             ),
           )
 
-  private def presentationErrorMessage(errors: Vector[DomainError]): String =
+  private def domainErrorsMessage(errors: Vector[DomainError]): String =
     errors.map(_.message).mkString("; ")
 
   private def buildPresentation(): Either[Vector[DomainError], Presentation] =
-    presentation("My Declarative Slides") {
+    presentation("My Declarative Slides"):
       deck(
         theme(Theme.default),
 
-        slide("Introduction", Layout.Centered) {
+        slide("Introduction", Layout.Centered):
           content(
             text("A presentation written directly inside Main.scala"),
             bullets("Scala 3", "DSL embedded", "HTML rendering"),
           )
-        },
+        ,
 
-        slide("Code Example") {
+        slide("Code Example"):
           content(
             text("A simple Scala example:"),
             code(
@@ -69,68 +76,87 @@ object Main:
                 |println(x)""".stripMargin,
             ),
           )
-        },
+        ,
 
-        slide("Closing") {
+        slide("Closing"):
           content(
-            text("This HTML file can be opened in the browser."),
+            text("This output can be rendered from the CLI."),
             spacer(),
             text("End of demo."),
-          )
-        },
+          ),
       )
-    }
+
+  private def buildPresentationRegistry(
+    presentation: Presentation,
+  ): PresentationRegistry =
+    InMemoryPresentationRegistry(
+      presentationName -> presentation,
+    )
+
+  private def buildRendererRegistry(): RendererRegistry =
+    RendererRegistry(
+      new HtmlRenderer,
+      new TextRenderer,
+    )
 
   private def buildRenderPresentation(
-    presentation: Presentation,
+    presentationRegistry: PresentationRegistry,
+    rendererRegistry: RendererRegistry,
   ): RenderPresentation =
     new RenderPresentation(
-      registry = InMemoryPresentationRegistry(
-        "my-presentation" -> presentation,
-      ),
-      htmlRenderer = new HtmlRenderer,
-      textRenderer = new TextRenderer,
+      registry = presentationRegistry,
+      rendererRegistry = rendererRegistry,
       fileSystem = LocalFileSystem,
     )
 
-  private def renderAndReport(
-    service: RenderPresentation,
-    request: RenderRequest,
-    label: String,
-  ): Unit =
-    service.run(request) match
-      case Right(result) =>
-        println(
-          s"$label generated in: ${result.writtenTo.getOrElse("unknown path")}",
-        )
+  private def buildCliHandler(
+    presentationRegistry: PresentationRegistry,
+    rendererRegistry: RendererRegistry,
+    output: OutputPort,
+  ): CliHandler =
+    new CliHandler(
+      presentationRegistry = presentationRegistry,
+      renderPresentation = buildRenderPresentation(
+        presentationRegistry,
+        rendererRegistry,
+      ),
+      rendererRegistry = rendererRegistry,
+      output = output,
+    )
 
-      case Left(error) =>
-        println(s"$label error: ${error.message}")
-
-  @main def renderMyPresentation(): Unit =
+  private def run(
+    args: List[String],
+    output: OutputPort = StdOutput,
+  ): Int =
     buildPresentation() match
       case Left(errors) =>
-        println(s"Invalid presentation: ${presentationErrorMessage(errors)}")
+        output.writeLine(
+          CliMessages.renderErrorMessage(
+            s"Invalid presentation: ${domainErrorsMessage(errors)}",
+          ),
+        )
+        CliExitCode.Failure
 
       case Right(presentation) =>
-        val service = buildRenderPresentation(presentation)
-
-        renderAndReport(
-          service,
-          RenderRequest(
-            presentationName = "my-presentation",
-            format = Html,
-            outputPath = Some("out/my-presentation.html"),
-          ),
-          "HTML",
+        val presentationRegistry = buildPresentationRegistry(presentation)
+        val rendererRegistry = buildRendererRegistry()
+        val parser = new CliParser(rendererRegistry)
+        val handler = buildCliHandler(
+          presentationRegistry,
+          rendererRegistry,
+          output,
         )
 
-        renderAndReport(
-          service,
-          RenderRequest(
-            presentationName = "my-presentation",
-            format = Text,
-            outputPath = Some("out/my-presentation.txt"),
-          ),
-          "Text",
-        )
+        parser.parse(args) match
+          case Left(error) =>
+            output.writeLine(CliMessages.renderErrorMessage(error.message))
+            CliExitCode.Failure
+
+          case Right(command) =>
+            handler.handle(command)
+
+  @main def declslides(args: String*): Unit =
+    val exitCode = run(args.toList)
+
+    if exitCode != CliExitCode.Success then
+      sys.exit(exitCode)

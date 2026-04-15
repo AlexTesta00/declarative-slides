@@ -1,6 +1,6 @@
 package declslides.cli
 
-import declslides.rendering.RenderingTarget
+import declslides.rendering.RenderFormat
 
 enum CliCommand derives CanEqual:
   case Help
@@ -8,4 +8,4 @@ enum CliCommand derives CanEqual:
 
   case Render(
     name: String,
-    format: RenderingTarget)
+    format: RenderFormat)

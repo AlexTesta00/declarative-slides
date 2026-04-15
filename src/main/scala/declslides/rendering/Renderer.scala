@@ -5,11 +5,21 @@ import declslides.domain.Presentation
 type Body = String
 type FileExtension = String
 
+final case class RenderFormat(
+  label: String,
+  fileExtension: FileExtension,
+  acceptedInputs: Set[String]):
+
+  def accepts(raw: String): Boolean =
+    acceptedInputs.contains(raw.toLowerCase)
+
 final case class Document(
-  target: RenderingTarget,
-  content: Body,
-  fileExtension: FileExtension)
+  target: RenderFormat,
+  content: Body):
+
+  def fileExtension: FileExtension =
+    target.fileExtension
 
 trait Renderer:
-  def target: RenderingTarget
+  def target: RenderFormat
   def render(presentation: Presentation): Document
