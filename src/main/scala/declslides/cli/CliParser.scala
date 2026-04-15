@@ -1,9 +1,12 @@
 package declslides.cli
 
 import declslides.application.ApplicationError
-import declslides.application.RenderFormat
+import declslides.rendering.RenderingTarget
 
 object CliParser:
+
+  private val usageMessage =
+    s"Usage: list | help | render <presentation-name> <${RenderingTarget.supportedLabels.mkString("|")}>"
 
   def parse(args: List[String]): Either[ApplicationError, CliCommand] =
     args match
@@ -17,13 +20,7 @@ object CliParser:
         Right(CliCommand.ListPresentations)
 
       case "render" :: name :: format :: Nil =>
-        RenderFormat.parse(format).map(parsed =>
-          CliCommand.Render(name, parsed),
-        )
+        RenderingTarget.parse(format).map(CliCommand.Render(name, _))
 
       case _ =>
-        Left(
-          ApplicationError.InvalidCommand(
-            "Usage: list | help | render <presentation-name> <html|text>",
-          ),
-        )
+        Left(ApplicationError.InvalidCommand(usageMessage))
