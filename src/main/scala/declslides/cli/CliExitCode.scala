@@ -1,5 +1,5 @@
 package declslides.cli
 
-object CliExitCode:
-  val Success: Int = 0
-  val Failure: Int = 1
+enum CliExitCode(val code: Int) derives CanEqual:
+  case Success extends CliExitCode(0)
+  case Failure extends CliExitCode(1)
