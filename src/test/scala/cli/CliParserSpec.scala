@@ -34,7 +34,7 @@ class CliParserSpec extends AnyFlatSpec with Matchers:
   private val usageError =
     Left(
       ApplicationError.InvalidCommand(
-        s"Usage: list | help | render <presentation-name> <$supportedFormats>",
+        s"Usage: list | help | render <presentation-name> <$supportedFormats> [output-path]",
       ),
     )
 
@@ -54,31 +54,58 @@ class CliParserSpec extends AnyFlatSpec with Matchers:
   it should "parse the list command" in:
     parse("list").shouldBe(Right(CliCommand.ListPresentations))
 
-  it should "parse the render command in html format" in:
+  it should "parse the render command in html format without an output path" in:
     parse("render", "demo", "html").shouldBe(
-      Right(CliCommand.Render("demo", htmlFormat)),
+      Right(CliCommand.Render("demo", htmlFormat, None)),
     )
 
-  it should "parse the render command in text format" in:
+  it should "parse the render command in text format without an output path" in:
     parse("render", "demo", "text").shouldBe(
-      Right(CliCommand.Render("demo", textFormat)),
+      Right(CliCommand.Render("demo", textFormat, None)),
     )
 
   it should "accept txt as an alias for text" in:
     parse("render", "demo", "txt").shouldBe(
-      Right(CliCommand.Render("demo", textFormat)),
+      Right(CliCommand.Render("demo", textFormat, None)),
     )
 
-  it should "reject unsupported formats" in:
+  it should "parse the render command with an output path" in:
+    parse("render", "demo", "html", "out/demo.html").shouldBe(
+      Right(CliCommand.Render("demo", htmlFormat, Some("out/demo.html"))),
+    )
+
+  it should "parse the render command with a text output path" in:
+    parse("render", "demo", "text", "out/demo.txt").shouldBe(
+      Right(CliCommand.Render("demo", textFormat, Some("out/demo.txt"))),
+    )
+
+  it should "reject unsupported formats without an output path" in:
     parse("render", "demo", "pdf").shouldBe(
       unsupportedFormatError("pdf"),
     )
 
-  it should "reject malformed render commands" in:
+  it should "reject unsupported formats with an output path" in:
+    parse("render", "demo", "pdf", "out/demo.pdf").shouldBe(
+      unsupportedFormatError("pdf"),
+    )
+
+  it should "reject malformed render commands with too few arguments" in:
     parse("render").shouldBe(usageError)
+
+  it should "reject malformed render commands with too many arguments" in:
+    parse(
+      "render",
+      "demo",
+      "html",
+      "out/demo.html",
+      "extra",
+    ).shouldBe(usageError)
 
   it should "reject unknown commands" in:
     parse("open", "demo").shouldBe(usageError)
 
   it should "reject extra arguments for list" in:
     parse("list", "extra").shouldBe(usageError)
+
+  it should "reject extra arguments for help" in:
+    parse("help", "extra").shouldBe(usageError)
