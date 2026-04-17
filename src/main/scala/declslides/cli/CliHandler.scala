@@ -12,7 +12,7 @@ final class CliHandler(
   rendererRegistry: RendererRegistry,
   output: OutputPort):
 
-  def handle(command: CliCommand): Int =
+  def handle(command: CliCommand): CliExitCode =
     command match
       case CliCommand.Help =>
         showHelp()
@@ -20,14 +20,14 @@ final class CliHandler(
       case CliCommand.ListPresentations =>
         showAvailablePresentations()
 
-      case CliCommand.Render(name, format) =>
-        renderPresentationToOutput(name, format)
+      case CliCommand.Render(name, format, outputPath) =>
+        renderPresentationToOutput(name, format, outputPath)
 
-  private def showHelp(): Int =
+  private def showHelp(): CliExitCode =
     output.writeLine(CliMessages.helpText(rendererRegistry))
     CliExitCode.Success
 
-  private def showAvailablePresentations(): Int =
+  private def showAvailablePresentations(): CliExitCode =
     output.writeLine(CliMessages.availablePresentationsHeader)
     presentationRegistry.available.foreach { name =>
       output.writeLine(s"${CliMessages.presentationBulletPrefix}$name")
@@ -37,11 +37,16 @@ final class CliHandler(
   private def renderPresentationToOutput(
     name: String,
     format: RenderFormat,
-  ): Int =
-    renderPresentation.run(RenderRequest(name, format, None)) match
+    outputPath: Option[String],
+  ): CliExitCode =
+    renderPresentation.run(RenderRequest(name, format, outputPath)) match
       case Right(result) =>
         output.writeLine(CliMessages.renderSuccessMessage(name, format))
-        output.writeLine(result.document.content)
+        outputPath match
+          case Some(path) =>
+            output.writeLine(CliMessages.renderWrittenMessage(path))
+          case None =>
+            output.writeLine(result.document.content)
         CliExitCode.Success
 
       case Left(error) =>

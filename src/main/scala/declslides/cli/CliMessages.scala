@@ -19,7 +19,7 @@ object CliMessages:
        |  list
        |  render <presentation-name> <${rendererRegistry.supportedLabels.mkString(
         "|",
-      )}>
+      )}> [output-path]
        |""".stripMargin
 
   def renderSuccessMessage(
@@ -27,6 +27,9 @@ object CliMessages:
     format: RenderFormat,
   ): String =
     s"Rendered '$presentationName' as ${format.label}."
+
+  def renderWrittenMessage(path: String): String =
+    s"Written to: $path"
 
   def renderErrorMessage(message: String): String =
     s"Error: $message"
