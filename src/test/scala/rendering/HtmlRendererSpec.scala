@@ -9,7 +9,7 @@ class HtmlRendererSpec extends AnyFlatSpec with RendererSpecSupport:
 
   behavior of "HtmlRenderer"
 
-  override protected val renderer = HtmlRenderer()
+  override protected val renderer = HtmlRenderer
 
   private val htmlFormat = HtmlRenderer.Target
 

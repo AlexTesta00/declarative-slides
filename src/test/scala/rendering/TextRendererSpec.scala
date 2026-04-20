@@ -9,7 +9,7 @@ class TextRendererSpec extends AnyFlatSpec with RendererSpecSupport:
 
   behavior of "TextRenderer"
 
-  override protected val renderer = TextRenderer()
+  override protected val renderer = TextRenderer
 
   private val textFormat = TextRenderer.Target
 
