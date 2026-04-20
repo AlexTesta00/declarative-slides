@@ -7,7 +7,7 @@ import declslides.rendering.Document
 import declslides.rendering.RenderFormat
 import declslides.rendering.Renderer
 
-object TextRenderer:
+object TextRenderer extends Renderer:
 
   val Target: RenderFormat =
     RenderFormat(
@@ -16,10 +16,8 @@ object TextRenderer:
       acceptedInputs = Set("text", "txt"),
     )
 
-final class TextRenderer extends Renderer:
-
   override val target: RenderFormat =
-    TextRenderer.Target
+    Target
 
   override def render(presentation: Presentation): Document =
     Document(

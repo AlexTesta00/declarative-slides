@@ -10,7 +10,7 @@ import declslides.rendering.Renderer
 import scalatags.Text.all._
 import scalatags.Text.tags2.section
 
-object HtmlRenderer:
+object HtmlRenderer extends Renderer:
 
   val Target: RenderFormat =
     RenderFormat(
@@ -19,14 +19,12 @@ object HtmlRenderer:
       acceptedInputs = Set("html"),
     )
 
-final class HtmlRenderer extends Renderer:
-
   private val styleTag = tag("style")
   private val titleTag = tag("title")
   private val mainTag = tag("main")
 
   override val target: RenderFormat =
-    HtmlRenderer.Target
+    Target
 
   override def render(presentation: Presentation): Document =
     val page =
@@ -86,9 +84,7 @@ final class HtmlRenderer extends Renderer:
         p(value)
 
       case SlideElement.BulletList(items) =>
-        ul(
-          items.map(li(_)),
-        )
+        ul(items.map(li(_)))
 
       case SlideElement.CodeBlock(language, source) =>
         pre(
@@ -96,9 +92,12 @@ final class HtmlRenderer extends Renderer:
         )
 
       case SlideElement.Spacer(lines) =>
-        div(height := s"${lines}rem")
+        div(style := s"height: ${lines}rem;")
 
   private def layoutClass(layout: Layout): String =
     layout match
-      case Layout.Flow => "flow"
-      case Layout.Centered => "centered"
+      case Layout.Flow =>
+        "flow"
+
+      case Layout.Centered =>
+        "centered"

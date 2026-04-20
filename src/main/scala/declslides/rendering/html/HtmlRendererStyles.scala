@@ -1,65 +1,83 @@
 package declslides.rendering.html
 
 import declslides.domain.Theme
-import scalacss.DevDefaults._
 
 object HtmlRendererStyles:
 
   def render(theme: Theme): String =
-    object Styles extends StyleSheet.Standalone:
-      import dsl.*
-
-      "body" - (
-        margin.`0`,
-        fontFamily :=! "system-ui, sans-serif",
-        backgroundColor :=! theme.background,
-        color :=! theme.foreground,
-      )
-
-      ".presentation" - (
-        maxWidth(1100.px),
-        margin(0.px, auto),
-        padding(2.rem),
-      )
-
-      ".deck-header" - (
-        borderBottom :=! s"2px solid ${theme.accent}",
-        marginBottom(2.rem),
-        paddingBottom(1.rem),
-      )
-
-      ".slide" - (
-        minHeight :=! "70vh",
-        paddingTop(2.rem),
-        paddingBottom(2.rem),
-        borderBottom :=! "1px solid rgba(255,255,255,0.15)",
-        display.flex,
-        flexDirection.column,
-        gap :=! "1rem",
-      )
-
-      ".slide.centered" - (
-        justifyContent.center,
-        alignItems.center,
-        textAlign.center,
-      )
-
-      ".slide h2" - (
-        color :=! theme.accent,
-        marginBottom(1.rem),
-      )
-
-      "pre" - (
-        backgroundColor :=! theme.codeBackground,
-        padding(1.rem),
-        borderRadius(8.px),
-        overflowX.auto,
-      )
-
-      "code" - (
-        fontFamily :=! "ui-monospace, monospace"
-      )
-
-      "ul" - lineHeight(1.7)
-
-    Styles.render
+    s"""
+       |:root {
+       |  --background: ${theme.background};
+       |  --foreground: ${theme.foreground};
+       |  --accent: ${theme.accent};
+       |  --code-background: ${theme.codeBackground};
+       |  --border: rgba(255, 255, 255, 0.15);
+       |}
+       |
+       |* {
+       |  box-sizing: border-box;
+       |}
+       |
+       |html {
+       |  scroll-behavior: smooth;
+       |}
+       |
+       |body {
+       |  margin: 0;
+       |  font-family: system-ui, sans-serif;
+       |  background: var(--background);
+       |  color: var(--foreground);
+       |}
+       |
+       |.presentation {
+       |  max-width: 1100px;
+       |  margin: 0 auto;
+       |  padding: 2rem;
+       |}
+       |
+       |.deck-header {
+       |  border-bottom: 2px solid var(--accent);
+       |  margin-bottom: 2rem;
+       |  padding-bottom: 1rem;
+       |}
+       |
+       |.slide {
+       |  min-height: 70vh;
+       |  padding: 2rem 0;
+       |  border-bottom: 1px solid var(--border);
+       |  display: flex;
+       |  flex-direction: column;
+       |  gap: 1rem;
+       |}
+       |
+       |.slide.centered {
+       |  justify-content: center;
+       |  align-items: center;
+       |  text-align: center;
+       |}
+       |
+       |.slide h2 {
+       |  margin: 0 0 1rem 0;
+       |  color: var(--accent);
+       |}
+       |
+       |p, ul, pre {
+       |  margin: 0;
+       |}
+       |
+       |ul {
+       |  line-height: 1.7;
+       |  padding-left: 1.25rem;
+       |}
+       |
+       |pre {
+       |  background: var(--code-background);
+       |  padding: 1rem;
+       |  border-radius: 8px;
+       |  overflow-x: auto;
+       |}
+       |
+       |code {
+       |  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+       |}
+       |""".stripMargin
