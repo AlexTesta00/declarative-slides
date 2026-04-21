@@ -8,47 +8,49 @@ class ApplicationErrorSpec extends AnyFlatSpec with Matchers:
 
   behavior of "ApplicationError"
 
-  it should "render a message for a missing input file" in:
+  it should "describe an input file not found error" in:
     val error =
-      ApplicationError.InputFileNotFound("examples/HelloPresentation.sc")
+      ApplicationError.InputFileNotFound("deck.sc")
+
+    error.message shouldBe "Input file not found: deck.sc"
+
+  it should "describe an unsupported input file error" in:
+    val error =
+      ApplicationError.UnsupportedInputFile("deck.txt")
 
     error.message shouldBe
-      "Input file not found: examples/HelloPresentation.sc"
+      "Unsupported input file: deck.txt. Expected a .sc script containing a DeclSlides expression"
 
-  it should "render a message for an unsupported input file" in:
-    val error =
-      ApplicationError.UnsupportedInputFile("examples/HelloPresentation.txt")
-
-    error.message shouldBe
-      "Unsupported input file: examples/HelloPresentation.txt. Expected a .sc script containing a DeclSlides expression"
-
-  it should "render a message when the input file cannot be read" in:
+  it should "describe a cannot read input error" in:
     val error =
       ApplicationError.CannotReadInput(
-        "examples/HelloPresentation.sc",
-        "Access denied",
+        path = "deck.sc",
+        reason = "permission denied",
+      )
+
+    error.message shouldBe "Cannot read input file 'deck.sc': permission denied"
+
+  it should "describe an unsupported format error" in:
+    val error =
+      ApplicationError.UnsupportedFormat(
+        raw = "pdf",
+        supported = Vector("html", "text", "txt"),
       )
 
     error.message shouldBe
-      "Cannot read input file 'examples/HelloPresentation.sc': Access denied"
+      "Unsupported format 'pdf'. Expected one of: html, text, txt"
 
-  it should "render a message for an unsupported output format" in:
+  it should "describe a scala cli unavailable error" in:
     val error =
-      ApplicationError.UnsupportedFormat("pdf", Vector("html", "text"))
+      ApplicationError.ScalaCliUnavailable(
+        binary = "scala-cli",
+        reason = "command not found",
+      )
 
-    error.message shouldBe
-      "Unsupported format 'pdf'. Expected one of: html, text"
+    error.message shouldBe "Cannot execute 'scala-cli': command not found"
 
-  it should "render a message when scala-cli is unavailable" in:
-    val error =
-      ApplicationError.ScalaCliUnavailable("scala-cli.bat", "command not found")
-
-    error.message shouldBe
-      "Cannot execute 'scala-cli.bat': command not found"
-
-  it should "render a message for script execution failures" in:
+  it should "describe a script execution failure" in:
     val error =
       ApplicationError.ScriptExecutionFailed("boom")
 
-    error.message shouldBe
-      "Script execution failed:\nboom"
+    error.message shouldBe "Script execution failed:\nboom"
