@@ -47,12 +47,11 @@ class ScriptRunnerSpec extends AnyFlatSpec with Matchers:
       .getOrElse(fail("Expected at least one supported render format"))
 
 private final class FixedScriptRunner(
-                                       result: Either[ApplicationError, Unit],
-                                     ) extends ScriptRunner:
+  result: Either[ApplicationError, Unit]) extends ScriptRunner:
 
   override def render(
-                       input: os.Path,
-                       target: RenderFormat,
-                       output: os.Path,
-                     ): Either[ApplicationError, Unit] =
+    input: os.Path,
+    target: RenderFormat,
+    output: os.Path,
+  ): Either[ApplicationError, Unit] =
     result

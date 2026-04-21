@@ -3,11 +3,8 @@ package application
 import declslides.application.ApplicationError
 import declslides.application.RenderCommand
 import declslides.application.ScriptRunner
-import declslides.domain.Presentation
-import declslides.rendering.Document
+import declslides.rendering.DefaultRendererRegistry
 import declslides.rendering.RenderFormat
-import declslides.rendering.Renderer
-import declslides.rendering.RendererRegistry
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -15,120 +12,92 @@ class RenderCommandSpec extends AnyFlatSpec with Matchers:
 
   behavior of "RenderCommand"
 
-  private val htmlTarget =
-    RenderFormat(
-      label = "html",
-      fileExtension = "html",
-      acceptedInputs = Set("html"),
-    )
-
-  private object HtmlRendererStub extends Renderer:
-
-    override val target: RenderFormat =
-      htmlTarget
-
-    override def render(presentation: Presentation): Document =
-      Document(
-        target = target,
-        content = "<html></html>",
-      )
-
-  private final class RecordingRunner(
-    result: Either[ApplicationError, Unit]) extends ScriptRunner:
-
-    var recordedInput: Option[os.Path] = None
-    var recordedTarget: Option[RenderFormat] = None
-    var recordedOutput: Option[os.Path] = None
-    var invocationCount: Int = 0
-
-    override def render(
-      input: os.Path,
-      target: RenderFormat,
-      output: os.Path,
-    ): Either[ApplicationError, Unit] =
-      invocationCount = invocationCount + 1
-      recordedInput = Some(input)
-      recordedTarget = Some(target)
-      recordedOutput = Some(output)
-      result
-
-  private val registry =
-    RendererRegistry(HtmlRendererStub)
-
-  it should "delegate to the runner when the format is supported" in:
-    val runner =
-      RecordingRunner(Right(()))
-
+  it should "fail when the requested format is unsupported" in:
+    val runner = new RecordingScriptRunner(Right(()))
     val command =
-      RenderCommand(
-        registry = registry,
-        runner = runner,
-      )
-
-    val input =
-      os.Path("examples/HelloPresentation.sc", os.pwd)
-
-    val output =
-      os.Path("out/HelloPresentation.html", os.pwd)
-
-    val result =
-      command.run(
-        input = input,
-        format = "html",
-        output = output,
-      )
-
-    result shouldBe Right(())
-    runner.invocationCount shouldBe 1
-    runner.recordedInput shouldBe Some(input)
-    runner.recordedTarget shouldBe Some(htmlTarget)
-    runner.recordedOutput shouldBe Some(output)
-
-  it should "return an unsupported format error when the format is unknown" in:
-    val runner =
-      RecordingRunner(Right(()))
-
-    val command =
-      RenderCommand(
-        registry = registry,
+      new RenderCommand(
+        registry = DefaultRendererRegistry.live,
         runner = runner,
       )
 
     val result =
       command.run(
-        input = os.Path("examples/HelloPresentation.sc", os.pwd),
+        input = os.Path("deck.sc", os.pwd),
         format = "pdf",
-        output = os.Path("out/HelloPresentation.pdf", os.pwd),
+        output = os.Path("deck.out", os.pwd),
       )
 
     result shouldBe Left(
       ApplicationError.UnsupportedFormat(
         raw = "pdf",
-        supported = Vector("html"),
+        supported = DefaultRendererRegistry.live.supportedLabels,
       ),
     )
-
     runner.invocationCount shouldBe 0
 
-  it should "propagate runner failures" in:
-    val expectedError =
-      ApplicationError.ScriptExecutionFailed("subprocess failed")
+  it should
+    "delegate rendering to the script runner when the format is supported" in:
+      val runner = new RecordingScriptRunner(Right(()))
+      val command =
+        new RenderCommand(
+          registry = DefaultRendererRegistry.live,
+          runner = runner,
+        )
 
-    val runner =
-      RecordingRunner(Left(expectedError))
+      val input = os.Path("deck.sc", os.pwd)
+      val output = os.Path("deck.out", os.pwd)
+      val format = DefaultRendererRegistry.live.supportedLabels.head
 
+      val result =
+        command.run(
+          input = input,
+          format = format,
+          output = output,
+        )
+
+      result shouldBe Right(())
+      runner.invocationCount shouldBe 1
+      runner.recordedInput shouldBe Some(input)
+      runner.recordedOutput shouldBe Some(output)
+      runner.recordedTarget.map(_.label) shouldBe Some(format)
+
+  it should "propagate the script runner failure when rendering fails" in {
+    val runner = new RecordingScriptRunner(
+      Left(ApplicationError.ScriptExecutionFailed("boom")),
+    )
     val command =
-      RenderCommand(
-        registry = registry,
+      new RenderCommand(
+        registry = DefaultRendererRegistry.live,
         runner = runner,
       )
 
+    val format = DefaultRendererRegistry.live.supportedLabels.head
+
     val result =
       command.run(
-        input = os.Path("examples/HelloPresentation.sc", os.pwd),
-        format = "html",
-        output = os.Path("out/HelloPresentation.html", os.pwd),
+        input = os.Path("deck.sc", os.pwd),
+        format = format,
+        output = os.Path("deck.out", os.pwd),
       )
 
-    result shouldBe Left(expectedError)
-    runner.invocationCount shouldBe 1
+    result shouldBe Left(ApplicationError.ScriptExecutionFailed("boom"))
+  }
+
+private final class RecordingScriptRunner(
+  nextResult: Either[ApplicationError, Unit]) extends ScriptRunner:
+
+  var invocationCount: Int = 0
+  var recordedInput: Option[os.Path] = None
+  var recordedTarget: Option[RenderFormat] = None
+  var recordedOutput: Option[os.Path] = None
+
+  override def render(
+    input: os.Path,
+    target: RenderFormat,
+    output: os.Path,
+  ): Either[ApplicationError, Unit] =
+    invocationCount += 1
+    recordedInput = Some(input)
+    recordedTarget = Some(target)
+    recordedOutput = Some(output)
+    nextResult
