@@ -4,7 +4,8 @@ import declslides.application.RenderCommand
 
 final class CliProgram(
   commandFactory: RenderCommandFactory,
-  printError: String => Unit):
+  printError: String => Unit,
+  printInfo: String => Unit):
 
   def run(args: Array[String]): ExitCode =
     execute(args) match
@@ -12,20 +13,21 @@ final class CliProgram(
         printError(s"[error] ${error.message}")
         ExitCode.Failure
 
-      case Right(_) =>
+      case Right(message) =>
+        printInfo(message)
         ExitCode.Success
 
-  private def execute(args: Array[String]): Either[CliError, Unit] =
+  private def execute(args: Array[String]): Either[CliError, String] =
     for
       config <- CliArgumentParser.parse(args)
       command <- commandFactory.create()
-      _ <- render(command, config)
-    yield ()
+      message <- render(command, config)
+    yield message
 
   private def render(
     command: RenderCommand,
     config: CliConfig,
-  ): Either[CliError, Unit] =
+  ): Either[CliError, String] =
     command
       .run(
         input = config.input,
@@ -34,4 +36,4 @@ final class CliProgram(
       )
       .left
       .map(error => CliError.RenderFailure(error.message))
-      .map(_ => ())
+      .map(_ => CliSuccessMessage.rendered(config))
