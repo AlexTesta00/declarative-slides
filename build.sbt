@@ -18,5 +18,7 @@ lazy val root = (project in file("."))
       "org.scalatest" %% "scalatest" % "3.2.20" % Test
     ),
 
-    Compile / mainClass := Some("declslides.cli.DeclSlidesCli")
+    Compile / mainClass := Some("declslides.cli.DeclSlidesCli"),
+    assembly / mainClass := Some("declslides.cli.DeclSlidesCli"),
+    assembly / assemblyJarName := "declslides.jar"
   )
