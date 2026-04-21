@@ -80,7 +80,18 @@
           "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
         }
       ],
-      "@semantic-release/github"
+      [
+        "@semantic-release/github",
+        {
+          "assets": [
+            {
+              "path": "target/scala-*/declslides.jar",
+              "name": "declslides-${nextRelease.version}.jar",
+              "label": "DeclSlides CLI JAR"
+            }
+          ]
+        }
+      ]
     ]
   }
 }
