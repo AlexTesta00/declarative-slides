@@ -26,4 +26,5 @@ class CliOptionSpec extends AnyFlatSpec with Matchers:
     CliOption.parse("--output") shouldBe Right(CliOption.Output)
 
   it should "fail on unknown options" in:
-    CliOption.parse("--verbose") shouldBe Left(CliError.UnknownOption("--verbose"))
+    CliOption.parse("--verbose") shouldBe
+      Left(CliError.UnknownOption("--verbose"))
