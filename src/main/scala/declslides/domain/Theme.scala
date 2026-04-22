@@ -3,6 +3,23 @@ package declslides.domain
 type ThemeName = String
 type HexColor = String
 
+/** Visual theme used by renderers.
+  *
+  * A theme keeps the color vocabulary small and renderer-friendly: background,
+  * foreground, accent, and code background are enough to express the current
+  * HTML and text renderers without overfitting the model.
+  *
+  * @param name
+  *   stable theme identifier
+  * @param background
+  *   main background color
+  * @param foreground
+  *   main text color
+  * @param accent
+  *   highlight color used for titles and emphasis
+  * @param codeBackground
+  *   background color for code blocks and similar surfaces
+  */
 final case class Theme(
   name: ThemeName,
   background: HexColor,
