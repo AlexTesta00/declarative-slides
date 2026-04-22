@@ -1,13 +1,20 @@
 package declslides.application
 
+/** Produces the bootstrap Scala source executed by the script runner.
+  *
+  * The generated source wraps the user script, resolves the presentation, picks
+  * the requested renderer, and writes the final document to disk.
+  */
 trait BootstrapSourceFactory:
 
+  /** Creates the bootstrap source for a user script. */
   def create(
     userSource: String,
     declslidesDependency: String,
     scalaVersion: Option[String],
   ): String
 
+/** Default bootstrap source factory for the Scala CLI runner. */
 object ScalaCliBootstrapSourceFactory extends BootstrapSourceFactory:
 
   private val UserSourceIndent = 6

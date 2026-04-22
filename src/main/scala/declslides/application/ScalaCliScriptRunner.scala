@@ -4,6 +4,26 @@ import declslides.rendering.RenderFormat
 
 import scala.util.control.NonFatal
 
+/** [[ScriptRunner]] implementation that evaluates presentation scripts with
+  * Scala CLI.
+  *
+  * This runner validates the input, reads the user source, generates a small
+  * bootstrap program, executes it through Scala CLI, and cleans up the
+  * temporary workspace afterward.
+  *
+  * @param declslidesDependency
+  *   dependency coordinate used inside the generated bootstrap script
+  * @param scalaCliBinary
+  *   binary used to invoke Scala CLI
+  * @param scalaVersion
+  *   optional Scala version pin for the bootstrap script
+  * @param inputValidator
+  *   validator for the input script path
+  * @param inputReader
+  *   reader for the input script source
+  * @param bootstrapSourceFactory
+  *   factory used to generate the bootstrap script
+  */
 final class ScalaCliScriptRunner(
   declslidesDependency: String,
   scalaCliBinary: String = ScalaCliScriptRunner.DefaultScalaCliBinary,
@@ -151,6 +171,7 @@ final class ScalaCliScriptRunner(
     if os.exists(workspace.directory) then
       os.remove.all(workspace.directory)
 
+/** Constants and small internal models used by [[ScalaCliScriptRunner]]. */
 object ScalaCliScriptRunner:
 
   private val DefaultScalaCliBinary = "scala-cli"
