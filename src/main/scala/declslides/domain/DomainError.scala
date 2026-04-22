@@ -1,5 +1,11 @@
 package declslides.domain
 
+/** Validation errors raised by the presentation domain model.
+  *
+  * Domain errors describe structural and content-level problems in a deck, such
+  * as missing titles, empty content, duplicate slide names, or invalid slide
+  * elements.
+  */
 enum DomainError derives CanEqual:
   case EmptyPresentationTitle
   case PresentationWithoutSlides
@@ -13,6 +19,7 @@ enum DomainError derives CanEqual:
   case EmptyCodeBlock
   case NonPositiveSpacer(lines: Int)
 
+  /** Returns a human-readable explanation of the validation problem. */
   def message: String = this match
     case EmptyPresentationTitle =>
       "Presentation title must not be blank"

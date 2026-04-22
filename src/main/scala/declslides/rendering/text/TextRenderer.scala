@@ -7,8 +7,15 @@ import declslides.rendering.Document
 import declslides.rendering.RenderFormat
 import declslides.rendering.Renderer
 
-object TextRenderer:
+/** Plain text renderer for validated presentations.
+  *
+  * The text renderer produces a simple, readable textual representation of the
+  * deck. It is especially useful for debugging, quick inspection, or
+  * environments where HTML is unnecessary.
+  */
+object TextRenderer extends Renderer:
 
+  /** Text rendering target metadata. */
   val Target: RenderFormat =
     RenderFormat(
       label = "text",
@@ -16,11 +23,10 @@ object TextRenderer:
       acceptedInputs = Set("text", "txt"),
     )
 
-final class TextRenderer extends Renderer:
-
   override val target: RenderFormat =
-    TextRenderer.Target
+    Target
 
+  /** Renders a presentation in a text document. */
   override def render(presentation: Presentation): Document =
     Document(
       target = target,

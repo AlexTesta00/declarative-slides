@@ -9,9 +9,30 @@ class HtmlRendererSpec extends AnyFlatSpec with RendererSpecSupport:
 
   behavior of "HtmlRenderer"
 
-  override protected val renderer = HtmlRenderer()
+  override protected val renderer: HtmlRenderer.type = HtmlRenderer
 
   private val htmlFormat = HtmlRenderer.Target
+
+  private def expectRight(
+    result: Either[Vector[DomainError], Presentation],
+  ): Presentation =
+    result match
+      case Right(presentation) =>
+        presentation
+      case Left(errors) =>
+        fail(s"Expected Right(Presentation), got Left($errors)")
+
+  private def themedContent(
+    theme: Theme,
+    slides: PresBuild*,
+  ): String =
+    renderer.render(
+      expectRight(
+        presentation("Demo").use(theme) {
+          deck(slides*)
+        },
+      ),
+    ).content
 
   it should "use the html rendering target" in:
     val document = render(
@@ -39,13 +60,21 @@ class HtmlRendererSpec extends AnyFlatSpec with RendererSpecSupport:
         include("</html>"),
     )
 
+  it should "include the tailwind browser cdn script" in:
+    val html = singleSlideContent():
+      text("Hello")
+
+    html.should(
+      include("""https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"""),
+    )
+
   it should "render the presentation title inside the title tag" in:
     val html = singleSlideContent():
       text("Hello")
 
     html.should(include("<title>Demo</title>"))
 
-  it should "render a section for each slide" in:
+  it should "render a full screen section for each slide" in:
     val html = renderedContent(
       slide("One"):
         text("A")
@@ -56,27 +85,34 @@ class HtmlRendererSpec extends AnyFlatSpec with RendererSpecSupport:
 
     html.should(
       include("""data-slide="1"""") and
-        include("""data-slide="2""""),
+        include("""data-slide="2"""") and
+        include("h-screen") and
+        include("snap-start"),
     )
 
-  it should "render centered slides with a centered class" in:
+  it should "render centered slides with centered content classes" in:
     val html = singleSlideContentWithLayout("Focus", Layout.Centered):
       text("Important")
 
-    html.should(include("""class="slide centered""""))
+    html.should(
+      include("items-center") and
+        include("justify-center") and
+        include("text-center"),
+    )
 
   it should "render paragraphs using p tags" in:
     val html = singleSlideContent():
       text("Hello")
 
-    html.should(include("<p>Hello</p>"))
+    html.should(include("<p"))
+    html.should(include(">Hello</p>"))
 
   it should "render bullet lists using ul and li tags" in:
     val html = singleSlideContent("Bullets"):
       bullets("One", "Two")
 
     html.should(
-      include("<ul>") and
+      include("<ul") and
         include("<li>One</li>") and
         include("<li>Two</li>"),
     )
@@ -86,7 +122,8 @@ class HtmlRendererSpec extends AnyFlatSpec with RendererSpecSupport:
       code("scala", "val x = 42")
 
     html.should(
-      include("<pre><code") and
+      include("<pre") and
+        include("<code") and
         include("language-scala") and
         include("val x = 42"),
     )
@@ -107,16 +144,36 @@ class HtmlRendererSpec extends AnyFlatSpec with RendererSpecSupport:
     )
 
     html.should(
-      include("<p>Hello</p>") and
+      include("<p") and
+        include(">Hello</p>") and
         include("<li>One</li>") and
         include("<li>Two</li>"),
     )
 
   it should "include theme metadata" in:
-    val html = renderedContent(
-      theme(Theme.conference),
-      slide("Intro"):
-        text("Hello"),
-    )
+    val html =
+      themedContent(
+        Theme.conference,
+        slide("Intro"):
+          text("Hello"),
+      )
 
     html.should(include("""data-theme="conference""""))
+
+  it should "include keyboard navigation for left and right arrows" in:
+    val html = singleSlideContent():
+      text("Hello")
+
+    html.should(
+      include("ArrowRight") and
+        include("ArrowLeft") and
+        include("scrollIntoView") and
+        include("presentation-root"),
+    )
+
+  it should "embed a non empty navigation script" in:
+    val html = singleSlideContent():
+      text("Hello")
+
+    html should include("<script>")
+    html should not include "<script></script>"

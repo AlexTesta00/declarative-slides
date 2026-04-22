@@ -2,82 +2,240 @@ package declslides.dsl
 
 import declslides.domain._
 
+/** Public DSL for building presentations in a small, declarative style.
+  *
+  * The DSL is split into two levels:
+  *
+  *   - presentation-level builders, used to compose a whole deck
+  *   - slide-level builders, used to compose the content of a single slide
+  *
+  * The public entry point is [[presentation]], which can be used either with
+  * the default theme or with an explicit theme configuration.
+  */
 object DSL:
 
+  /** Slide collected during DSL evaluation, before full validation happens.
+    *
+    * The DSL builds slides in two stages: first as lightweight pending values,
+    * then as fully validated domain slides.
+    */
   final case class PendingSlide(
     title: String,
     layout: Layout,
     elements: Vector[SlideElement])
 
+  /** Immutable configuration for a presentation before content is evaluated. */
+  final case class PresentationConfig(
+    title: String,
+    theme: Theme)
+
+  /** Mutable-in-spirit state threaded through presentation-level builders.
+    *
+    * Despite its name, the state remains immutable: each builder returns a new
+    * state rather than mutating the existing one.
+    */
   final case class PresentationState(
     title: String,
     theme: Theme = Theme.default,
-    pendingSlides: Vector[PendingSlide] = Vector.empty)
+    pendingSlides: Vector[PendingSlide] = Vector.empty):
 
+    def appendSlide(slide: PendingSlide): PresentationState =
+      copy(pendingSlides = pendingSlides :+ slide)
+
+  /** Immutable state threaded through slide-level builders. */
   final case class SlideState(
     title: String,
     layout: Layout,
-    elements: Vector[SlideElement] = Vector.empty)
+    elements: Vector[SlideElement] = Vector.empty):
 
+    def appendElement(element: SlideElement): SlideState =
+      copy(elements = elements :+ element)
+
+  /** Entry point for configuring a presentation before its body is evaluated.
+    *
+    * This type exists to make the DSL read naturally while keeping
+    * configuration concerns, such as theme selection, separate from content.
+    */
+  final class PresentationStart(title: String):
+
+    /** Builds a presentation using the default theme. */
+    def apply(
+      body: => PresBuild,
+    ): Either[Vector[DomainError], Presentation] =
+      configured(theme = Theme.default)(body)
+
+    /** Selects the theme to use for the presentation. */
+    infix def use(
+      theme: Theme,
+    ): ConfiguredPresentation =
+      configured(theme)
+
+    private def configured(
+      theme: Theme,
+    ): ConfiguredPresentation =
+      new ConfiguredPresentation(
+        PresentationConfig(
+          title = title,
+          theme = theme,
+        ),
+      )
+
+  /** Presentation builder with all global configuration already chosen. */
+  final class ConfiguredPresentation(
+    config: PresentationConfig):
+
+    /** Evaluates the body and returns either validation errors or a
+      * presentation.
+      */
+    def apply(
+      body: => PresBuild,
+    ): Either[Vector[DomainError], Presentation] =
+      PresentationBuilder.build(
+        config = config,
+        body = body,
+      )
+
+  /** Presentation-level builder.
+    *
+    * A `PresBuild` is just a transformation of [[PresentationState]], but
+    * giving that transformation a dedicated type makes the DSL much easier to
+    * read.
+    */
   final case class PresBuild(
     run: PresentationState => PresentationState):
 
     private infix def andThen(other: PresBuild): PresBuild =
-      PresBuild(state => other.run(run(state)))
+      PresBuild(
+        StateTransform.andThen(
+          left = run,
+          right = other.run,
+        ),
+      )
 
   private object PresBuild:
 
     private val empty: PresBuild =
-      PresBuild(identity)
+      PresBuild(StateTransform.identityOf)
 
     def combineAll(builds: Seq[PresBuild]): PresBuild =
-      builds.foldLeft(empty)(_ andThen _)
+      PresBuild(
+        StateTransform.combineAll(
+          builds.map(_.run),
+        ),
+      )
 
+  /** Slide-level builder.
+    *
+    * A `SlideBuild` describes how to extend the content of a single slide.
+    */
   final case class SlideBuild(
     run: SlideState => SlideState):
 
     private infix def andThen(other: SlideBuild): SlideBuild =
-      SlideBuild(state => other.run(run(state)))
+      SlideBuild(
+        StateTransform.andThen(
+          left = run,
+          right = other.run,
+        ),
+      )
 
   private object SlideBuild:
 
     private val empty: SlideBuild =
-      SlideBuild(identity)
+      SlideBuild(StateTransform.identityOf)
 
     def combineAll(builds: Seq[SlideBuild]): SlideBuild =
-      builds.foldLeft(empty)(_ andThen _)
+      SlideBuild(
+        StateTransform.combineAll(
+          builds.map(_.run),
+        ),
+      )
 
+  private object StateTransform:
+
+    def identityOf[S]: S => S =
+      state => state
+
+    def andThen[S](
+      left: S => S,
+      right: S => S,
+    ): S => S =
+      state => right(left(state))
+
+    def combineAll[S](
+      transforms: Seq[S => S],
+    ): S => S =
+      transforms.foldLeft(identityOf[S])(andThen)
+
+  private object PresentationBuilder:
+
+    def build(
+      config: PresentationConfig,
+      body: => PresBuild,
+    ): Either[Vector[DomainError], Presentation] =
+      val finalState =
+        body.run(initialState(config))
+
+      val (slideErrors, validSlides) =
+        validateSlides(finalState.pendingSlides)
+
+      val presentationErrors =
+        Presentation.validateSkeleton(
+          title = finalState.title,
+          slideTitles = finalState.pendingSlides.map(_.title),
+        )
+
+      val allErrors =
+        slideErrors ++ presentationErrors
+
+      if allErrors.nonEmpty then
+        Left(allErrors)
+      else
+        Presentation(
+          title = finalState.title,
+          slides = validSlides,
+          theme = finalState.theme,
+        )
+
+    private def initialState(
+      config: PresentationConfig,
+    ): PresentationState =
+      PresentationState(
+        title = config.title,
+        theme = config.theme,
+      )
+
+  /** Starts a presentation definition.
+    *
+    * Typical usage:
+    * {{{
+    * presentation("Demo").use(Theme.conference) {
+    *   deck(
+    *     slide("Intro") {
+    *       content(text("Hello"))
+    *     }
+    *   )
+    * }
+    * }}}
+    */
+  def presentation(title: String): PresentationStart =
+    new PresentationStart(title)
+
+  /** Combines presentation-level builders into a single deck definition. */
   def deck(items: PresBuild*): PresBuild =
     PresBuild.combineAll(items)
 
+  /** Combines slide-level builders into a single slide body. */
   def content(items: SlideBuild*): SlideBuild =
     SlideBuild.combineAll(items)
 
-  def presentation(title: String)(body: => PresBuild)
-    : Either[Vector[DomainError], Presentation] =
-    val finalState =
-      body.run(PresentationState(title = title))
-
-    val (slideErrors, validSlides) =
-      validateSlides(finalState.pendingSlides)
-
-    val presentationErrors =
-      Presentation.validateSkeleton(
-        title = finalState.title,
-        slideTitles = finalState.pendingSlides.map(_.title),
-      )
-
-    val allErrors =
-      slideErrors ++ presentationErrors
-
-    if allErrors.nonEmpty then
-      Left(allErrors)
-    else
-      Presentation(finalState.title, validSlides, finalState.theme)
-
-  def theme(value: Theme): PresBuild =
-    PresBuild(state => state.copy(theme = value))
-
+  /** Adds a slide to the current presentation.
+    *
+    * @param title
+    *   slide title
+    * @param layout
+    *   visual layout used by renderers
+    */
   def slide(
     title: String,
     layout: Layout = Layout.Flow,
@@ -85,56 +243,70 @@ object DSL:
   ): PresBuild =
     PresBuild { state =>
       val slideState =
-        body.run(SlideState(title = title, layout = layout))
-
-      val pending =
-        PendingSlide(
-          title = slideState.title,
-          layout = slideState.layout,
-          elements = slideState.elements,
+        body.run(
+          SlideState(
+            title = title,
+            layout = layout,
+          ),
         )
 
-      state.copy(
-        pendingSlides = state.pendingSlides :+ pending,
+      state.appendSlide(
+        toPendingSlide(slideState),
       )
     }
 
+  /** Adds a paragraph to the current slide. */
   def text(value: String): SlideBuild =
-    SlideBuild { state =>
-      state.copy(
-        elements = state.elements :+ SlideElement.Paragraph(value),
-      )
-    }
+    appendElement(
+      SlideElement.Paragraph(value),
+    )
 
+  /** Adds a bullet list to the current slide. */
   def bullets(items: String*): SlideBuild =
-    SlideBuild { state =>
-      state.copy(
-        elements = state.elements :+ SlideElement.BulletList(items.toVector),
-      )
-    }
+    appendElement(
+      SlideElement.BulletList(items.toVector),
+    )
 
+  /** Adds a code block to the current slide. */
   def code(
     language: String,
     source: String,
   ): SlideBuild =
-    SlideBuild { state =>
-      state.copy(
-        elements = state.elements :+ SlideElement.CodeBlock(language, source),
-      )
-    }
+    appendElement(
+      SlideElement.CodeBlock(language, source),
+    )
 
+  /** Adds vertical spacing to the current slide. */
   def spacer(lines: Int = 1): SlideBuild =
-    SlideBuild { state =>
-      state.copy(
-        elements = state.elements :+ SlideElement.Spacer(lines),
-      )
-    }
+    appendElement(
+      SlideElement.Spacer(lines),
+    )
+
+  private def appendElement(
+    element: SlideElement,
+  ): SlideBuild =
+    SlideBuild(state => state.appendElement(element))
+
+  private def toPendingSlide(
+    state: SlideState,
+  ): PendingSlide =
+    PendingSlide(
+      title = state.title,
+      layout = state.layout,
+      elements = state.elements,
+    )
 
   private def validateSlides(
     pendingSlides: Vector[PendingSlide],
   ): (Vector[DomainError], Vector[Slide]) =
     val results =
-      pendingSlides.map(ps => Slide(ps.title, ps.elements, ps.layout))
+      pendingSlides.map { pendingSlide =>
+        Slide(
+          title = pendingSlide.title,
+          elements = pendingSlide.elements,
+          layout = pendingSlide.layout,
+        )
+      }
 
     val errors =
       results.collect { case Left(errs) => errs }.flatten
