@@ -9,7 +9,7 @@ class HtmlRendererSpec extends AnyFlatSpec with RendererSpecSupport:
 
   behavior of "HtmlRenderer"
 
-  override protected val renderer = HtmlRenderer
+  override protected val renderer: HtmlRenderer.type = HtmlRenderer
 
   private val htmlFormat = HtmlRenderer.Target
 
@@ -113,10 +113,21 @@ class HtmlRendererSpec extends AnyFlatSpec with RendererSpecSupport:
     )
 
   it should "include theme metadata" in:
-    val html = renderedContent(
-      theme(Theme.conference),
-      slide("Intro"):
-        text("Hello"),
-    )
+    val presentationResult =
+      presentation("Demo").use(Theme.conference) {
+        deck(
+          slide("Intro"):
+            content(
+              text("Hello"),
+            ),
+        )
+      }
+
+    val html =
+      presentationResult match
+        case Right(presentation) =>
+          renderer.render(presentation).content
+        case Left(errors) =>
+          fail(s"Expected Right(Presentation), got Left($errors)")
 
     html.should(include("""data-theme="conference""""))

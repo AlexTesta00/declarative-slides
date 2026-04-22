@@ -67,9 +67,8 @@ class DslSpec extends AnyFlatSpec with Matchers:
 
   it should "support themes" in:
     val result =
-      presentation("Demo") {
+      presentation("Demo").use(Theme.conference) {
         deck(
-          theme(Theme.conference),
           slide("Intro") {
             content(text("Hello"))
           },
