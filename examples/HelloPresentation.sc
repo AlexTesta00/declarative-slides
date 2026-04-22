@@ -1,7 +1,7 @@
 import declslides.domain.Theme
 import declslides.dsl.DSL._
 
-presentation("Hello DeclSlides").use(Theme.conference) {
+presentation("Hello DeclSlides").use(Theme.default) {
   deck(
     slide("Intro") {
       content(
