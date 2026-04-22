@@ -2,11 +2,31 @@ package declslides.cli
 
 import declslides.application.RenderCommand
 
+/** Orchestrates the command-line flow for `declslides`.
+  *
+  * A `CliProgram` translates raw arguments into a validated configuration,
+  * builds the rendering command, executes it, and reports either a friendly
+  * error or a success message.
+  *
+  * @param commandFactory
+  *   factory used to build the concrete rendering command
+  * @param printError
+  *   sink for user-facing error messages
+  * @param printInfo
+  *   sink for user-facing informational messages
+  */
 final class CliProgram(
   commandFactory: RenderCommandFactory,
   printError: String => Unit,
   printInfo: String => Unit):
 
+  /** Runs the CLI program with the provided arguments.
+    *
+    * @param args
+    *   raw command-line arguments
+    * @return
+    *   the semantic exit code of the execution
+    */
   def run(args: Array[String]): ExitCode =
     execute(args) match
       case Left(error) =>

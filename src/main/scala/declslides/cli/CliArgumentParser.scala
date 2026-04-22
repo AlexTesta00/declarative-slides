@@ -1,7 +1,22 @@
 package declslides.cli
 
+/** Parses raw command-line arguments into a validated [[CliConfig]].
+  *
+  * The parser is responsible for recognizing supported flags, rejecting invalid
+  * combinations, and converting raw string values into more meaningful domain
+  * values such as paths and output formats.
+  */
 object CliArgumentParser:
 
+  /** Parses raw arguments using the provided working directory as path base.
+    *
+    * @param args
+    *   raw command-line arguments
+    * @param workingDirectory
+    *   base directory used to resolve relative paths
+    * @return
+    *   a validated CLI configuration, or a precise parsing error
+    */
   def parse(
     args: Array[String],
     workingDirectory: os.Path = os.pwd,

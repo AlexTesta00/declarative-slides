@@ -1,5 +1,11 @@
 package declslides.cli
 
+/** Entry point of the `declslides` command-line application.
+  *
+  * This object keeps process-level concerns small: it wires the CLI program,
+  * delegates the actual work, and turns the final result into a process exit
+  * code.
+  */
 object DeclSlidesCli:
 
   private def program(
@@ -22,6 +28,21 @@ object DeclSlidesCli:
       printInfo = printInfo,
     ).run(args)
 
+  /** Runs the CLI and returns the numeric exit code.
+    *
+    * This method is intentionally small and test-friendly: callers can override
+    * the output functions to capture messages without touching standard
+    * streams.
+    *
+    * @param args
+    *   raw command-line arguments
+    * @param printError
+    *   function used to report user-facing errors
+    * @param printInfo
+    *   function used to report successful completion messages
+    * @return
+    *   the process exit code as an `Int`
+    */
   def run(
     args: Array[String],
     printError: String => Unit = System.err.println,
