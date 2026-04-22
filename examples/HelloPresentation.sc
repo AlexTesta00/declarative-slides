@@ -1,9 +1,8 @@
 import declslides.domain.Theme
 import declslides.dsl.DSL._
 
-presentation("Hello DeclSlides") {
+presentation("Hello DeclSlides").use(Theme.conference) {
   deck(
-    theme(Theme.conference),
     slide("Intro") {
       content(
         text("Questa presentazione arriva da uno script .sc"),
