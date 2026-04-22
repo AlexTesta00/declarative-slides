@@ -2,17 +2,38 @@ package declslides.dsl
 
 import declslides.domain._
 
+/** Public DSL for building presentations in a small, declarative style.
+  *
+  * The DSL is split into two levels:
+  *
+  *   - presentation-level builders, used to compose a whole deck
+  *   - slide-level builders, used to compose the content of a single slide
+  *
+  * The public entry point is [[presentation]], which can be used either with
+  * the default theme or with an explicit theme configuration.
+  */
 object DSL:
 
+  /** Slide collected during DSL evaluation, before full validation happens.
+    *
+    * The DSL builds slides in two stages: first as lightweight pending values,
+    * then as fully validated domain slides.
+    */
   final case class PendingSlide(
     title: String,
     layout: Layout,
     elements: Vector[SlideElement])
 
+  /** Immutable configuration for a presentation before content is evaluated. */
   final case class PresentationConfig(
     title: String,
     theme: Theme)
 
+  /** Mutable-in-spirit state threaded through presentation-level builders.
+    *
+    * Despite its name, the state remains immutable: each builder returns a new
+    * state rather than mutating the existing one.
+    */
   final case class PresentationState(
     title: String,
     theme: Theme = Theme.default,
@@ -21,6 +42,7 @@ object DSL:
     def appendSlide(slide: PendingSlide): PresentationState =
       copy(pendingSlides = pendingSlides :+ slide)
 
+  /** Immutable state threaded through slide-level builders. */
   final case class SlideState(
     title: String,
     layout: Layout,
@@ -29,13 +51,20 @@ object DSL:
     def appendElement(element: SlideElement): SlideState =
       copy(elements = elements :+ element)
 
+  /** Entry point for configuring a presentation before its body is evaluated.
+    *
+    * This type exists to make the DSL read naturally while keeping
+    * configuration concerns, such as theme selection, separate from content.
+    */
   final class PresentationStart(title: String):
 
+    /** Builds a presentation using the default theme. */
     def apply(
       body: => PresBuild,
     ): Either[Vector[DomainError], Presentation] =
       configured(theme = Theme.default)(body)
 
+    /** Selects the theme to use for the presentation. */
     infix def use(
       theme: Theme,
     ): ConfiguredPresentation =
@@ -51,9 +80,13 @@ object DSL:
         ),
       )
 
+  /** Presentation builder with all global configuration already chosen. */
   final class ConfiguredPresentation(
     config: PresentationConfig):
 
+    /** Evaluates the body and returns either validation errors or a
+      * presentation.
+      */
     def apply(
       body: => PresBuild,
     ): Either[Vector[DomainError], Presentation] =
@@ -62,6 +95,12 @@ object DSL:
         body = body,
       )
 
+  /** Presentation-level builder.
+    *
+    * A `PresBuild` is just a transformation of [[PresentationState]], but
+    * giving that transformation a dedicated type makes the DSL much easier to
+    * read.
+    */
   final case class PresBuild(
     run: PresentationState => PresentationState):
 
@@ -85,6 +124,10 @@ object DSL:
         ),
       )
 
+  /** Slide-level builder.
+    *
+    * A `SlideBuild` describes how to extend the content of a single slide.
+    */
   final case class SlideBuild(
     run: SlideState => SlideState):
 
@@ -162,15 +205,37 @@ object DSL:
         theme = config.theme,
       )
 
+  /** Starts a presentation definition.
+    *
+    * Typical usage:
+    * {{{
+    * presentation("Demo").use(Theme.conference) {
+    *   deck(
+    *     slide("Intro") {
+    *       content(text("Hello"))
+    *     }
+    *   )
+    * }
+    * }}}
+    */
   def presentation(title: String): PresentationStart =
     new PresentationStart(title)
 
+  /** Combines presentation-level builders into a single deck definition. */
   def deck(items: PresBuild*): PresBuild =
     PresBuild.combineAll(items)
 
+  /** Combines slide-level builders into a single slide body. */
   def content(items: SlideBuild*): SlideBuild =
     SlideBuild.combineAll(items)
 
+  /** Adds a slide to the current presentation.
+    *
+    * @param title
+    *   slide title
+    * @param layout
+    *   visual layout used by renderers
+    */
   def slide(
     title: String,
     layout: Layout = Layout.Flow,
@@ -190,16 +255,19 @@ object DSL:
       )
     }
 
+  /** Adds a paragraph to the current slide. */
   def text(value: String): SlideBuild =
     appendElement(
       SlideElement.Paragraph(value),
     )
 
+  /** Adds a bullet list to the current slide. */
   def bullets(items: String*): SlideBuild =
     appendElement(
       SlideElement.BulletList(items.toVector),
     )
 
+  /** Adds a code block to the current slide. */
   def code(
     language: String,
     source: String,
@@ -208,6 +276,7 @@ object DSL:
       SlideElement.CodeBlock(language, source),
     )
 
+  /** Adds vertical spacing to the current slide. */
   def spacer(lines: Int = 1): SlideBuild =
     appendElement(
       SlideElement.Spacer(lines),
