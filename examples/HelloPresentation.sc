@@ -1,20 +1,25 @@
+import declslides.domain.Layout.Flow
 import declslides.domain.Theme
 import declslides.dsl.DSL._
 
 presentation("Hello DeclSlides").use(Theme.default) {
   deck(
-    slide("Intro") {
+    slide("Intro", Flow) {
       content(
-        text("Questa presentazione arriva da uno script .sc"),
+        text("Questo è il tool declerative slides"),
+        text("Qui puoi scrivere presentazioni in modo dichiarativo attraverso un DSL in scala"),
+        text("Il DSL supporta: "),
         bullets(
-          "DSL pura",
-          "render HTML",
-          "render text"
+          "Testi",
+          "Pezzi di codice",
+          "Liste puntate",
+          "Spaziature"
         )
       )
     },
-    slide("Code") {
+    slide("Code", Flow) {
       content(
+        text("Ecco un esempio di codice:"),
         code(
           "scala",
           """println("hello declslides")"""
