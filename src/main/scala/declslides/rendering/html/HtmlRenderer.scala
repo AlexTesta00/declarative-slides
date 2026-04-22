@@ -10,8 +10,14 @@ import declslides.rendering.Renderer
 import scalatags.Text.all._
 import scalatags.Text.tags2.section
 
+/** HTML renderer for validated presentations.
+  *
+  * This renderer produces a self-contained HTML document with Tailwind loaded
+  * from a CDN and a slide-oriented layout intended for full-screen navigation.
+  */
 object HtmlRenderer extends Renderer:
 
+  /** HTML rendering target metadata. */
   val Target: RenderFormat =
     RenderFormat(
       label = "html",

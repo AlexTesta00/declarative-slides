@@ -2,8 +2,16 @@ package declslides.rendering.html
 
 import java.nio.charset.StandardCharsets
 
+/** Utility for loading text resource form classPath */
 object ResourceTextLoader:
 
+  /** Loads a text resource from the classpath.
+    *
+    * @param path
+    *   absolute classpath resource path
+    * @return
+    *   the resource content, or a readable loading error
+    */
   def load(path: String): Either[String, String] =
     Option(getClass.getResourceAsStream(path))
       .toRight(s"Resource not found: $path")
