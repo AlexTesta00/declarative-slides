@@ -184,8 +184,29 @@ object HtmlRenderer extends Renderer:
         "flex items-center"
 
   private def renderNavigationScript: Frag =
-    script(
-      raw(
-        HtmlNavigationScript.content.getOrElse(""),
-      ),
-    )
+    HtmlNavigationScript.content match
+      case Right(scriptContent) =>
+        script(
+          raw(scriptContent),
+        )
+
+      case Left(error) =>
+        script(
+          raw(
+            s"""console.error(${toJsStringLiteral(error)});""",
+          ),
+        )
+
+  private def toJsStringLiteral(value: String): String =
+    val escaped =
+      value
+        .flatMap {
+          case '\\' => "\\\\"
+          case '"' => "\\\""
+          case '\n' => "\\n"
+          case '\r' => "\\r"
+          case '\t' => "\\t"
+          case c => c.toString
+        }
+
+    s""""$escaped""""

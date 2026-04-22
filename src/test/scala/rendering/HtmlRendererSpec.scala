@@ -170,3 +170,10 @@ class HtmlRendererSpec extends AnyFlatSpec with RendererSpecSupport:
         include("scrollIntoView") and
         include("presentation-root"),
     )
+
+  it should "embed a non empty navigation script" in:
+    val html = singleSlideContent():
+      text("Hello")
+
+    html should include("<script>")
+    html should not include "<script></script>"
