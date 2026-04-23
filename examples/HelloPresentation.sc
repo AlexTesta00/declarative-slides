@@ -13,7 +13,8 @@ presentation("Hello DeclSlides").use(Theme.default) {
           "Testi",
           "Pezzi di codice",
           "Liste puntate",
-          "Spaziature"
+          "Spaziature",
+          "Immagini"
         )
       )
     },
@@ -23,6 +24,15 @@ presentation("Hello DeclSlides").use(Theme.default) {
         code(
           "scala",
           """println("hello declslides")"""
+        )
+      )
+    },
+    slide("Media", Flow) {
+      content(
+        text("Ecco un esempio di immagine:"),
+        image(
+          "https://images.unsplash.com/photo-1776722091903-097d6dab0455?q=80&w=1287&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+          "Google logo"
         )
       )
     }

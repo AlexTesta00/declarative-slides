@@ -1,5 +1,7 @@
 package declslides.domain
 
+type URL = String
+
 /** Content elements that can appear inside a slide. */
 enum SlideElement derives CanEqual:
   /** Plain paragraph text. */
@@ -15,6 +17,11 @@ enum SlideElement derives CanEqual:
 
   /** Vertical spacer measured in logical lines. */
   case Spacer(lines: Int)
+
+  /** An image with a source URL and alternative text. */
+  case Image(
+    source: URL,
+    altText: String)
 
 /** Validation helpers for [[SlideElement]] values. */
 object SlideElement:
@@ -44,3 +51,13 @@ object SlideElement:
 
     case SlideElement.Spacer(lines) =>
       Option.when(lines <= 0)(DomainError.NonPositiveSpacer(lines)).toVector
+
+    case SlideElement.Image(source, altText) =>
+      valideteImage(source, altText)
+
+  private def valideteImage(
+    source: URL,
+    altText: String,
+  ): Vector[DomainError] =
+    Option.when(source.trim.isEmpty)(DomainError.EmptyImageSource).toVector ++
+      Option.when(altText.trim.isEmpty)(DomainError.EmptyImageAltText).toVector

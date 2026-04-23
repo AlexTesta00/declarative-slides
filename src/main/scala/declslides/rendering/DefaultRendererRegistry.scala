@@ -1,6 +1,7 @@
 package declslides.rendering
 
 import declslides.rendering.html.HtmlRenderer
+import declslides.rendering.markdown.MarkdownRenderer
 import declslides.rendering.text.TextRenderer
 
 /** Production renderer registry shipped with DeclSlides.
@@ -13,5 +14,6 @@ object DefaultRendererRegistry:
   val live: RendererRegistry =
     RendererRegistry(
       TextRenderer,
+      MarkdownRenderer,
       HtmlRenderer,
     )

@@ -15,6 +15,12 @@ enum OutputFormat(val value: String):
   /** Plain text output using the short `txt` label. */
   case Txt extends OutputFormat("txt")
 
+  /** Markdown output using the canonical `Markdown` label. */
+  case Markdown extends OutputFormat("markdown")
+
+  /** Markdown output using the short `md` label. */
+  case Md extends OutputFormat("md")
+
 /** Helpers for parsing and listing supported output formats. */
 object OutputFormat:
 
@@ -23,6 +29,8 @@ object OutputFormat:
       OutputFormat.Html,
       OutputFormat.Text,
       OutputFormat.Txt,
+      OutputFormat.Markdown,
+      OutputFormat.Md,
     )
 
   private val byValue: Map[String, OutputFormat] =

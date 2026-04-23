@@ -1,30 +1,49 @@
-# Declarative-Slides
+## Declarative-Slides
 
-The project implements a **Scala 3 embedded DSL** for defining slide presentations in a declarative and compositional style, with support for:
+The project implements a Scala 3 embedded DSL for defining slide presentations in a declarative and compositional style, with support for:
 
-- **Domain Validation**
-- **Text Rendering**
-- **HTML Rendering**
-- **Application-level Rendering Use Cases**
-- **CLI execution**
+- Text
+- Code snippets
+- Bullet lists
+- Spacing
+- Images
 
-## Main features
-- Support for:
-    - paragraphs
-    - bullet lists
-    - code blocks
-    - spacers
-- Slide layouts:
-    - `Flow`
-    - `Centered`
-- Themes:
-    - `default`
-    - `light`
-    - `conference`
-- Rendering targets:
-    - `text`
-    - `html`
-- CLI commands:
-    - `help`
-    - `list`
-    - `render <presentation-name> <format> [output-path]`
+## Example
+
+Here is an example of code:
+
+```scala
+
+presentation("Hello DeclSlides").use(Theme.default) {
+  deck(
+    slide("Intro", Flow) {
+      content(
+        text("This is the declerative slides tool"),
+        text("Here you can write presentations in a declarative way through a DSL in scala"),
+        text("The DSL supports: "),
+        bullets(
+          "Texts",
+          "Code snippets",
+          "Bullet lists",
+          "Spacing",
+          "Images"
+        )
+      )
+  },
+}
+                  
+```
+
+## How to setup
+
+Add to path variables:
+
+```bash
+DECLSLIDES_SCALA_CLI=path/to/scala-cli
+```
+
+Then run:
+
+```bash
+java -jar declslides.jar --input path/to/presentation.sc --format html --output path/to/presentation.html
+```

@@ -41,7 +41,10 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./target/scala-*/scoverage-report/scoverage.xml
+          disable_search: true
           fail_ci_if_error: true
+          version: v11.2.7 
+          verbose: true
 
   build:
     name: Build (${{ matrix.os }})

@@ -148,3 +148,24 @@ class CliArgumentParserSpec extends AnyFlatSpec with Matchers:
       )
 
     result shouldBe Left(CliError.UnexpectedArgument("slides.sc"))
+
+  it should "parse markdown as a supported output format" in:
+    val result =
+      CliArgumentParser.parse(
+        Array(
+          "--input",
+          "slides.sc",
+          "--format",
+          "markdown",
+          "--output",
+          "slides.md",
+        ),
+      )
+
+    result shouldBe Right(
+      CliConfig(
+        input = os.Path("slides.sc", os.pwd),
+        format = OutputFormat.Markdown,
+        output = os.Path("slides.md", os.pwd),
+      ),
+    )

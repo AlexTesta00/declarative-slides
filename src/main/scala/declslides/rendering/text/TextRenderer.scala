@@ -73,3 +73,6 @@ object TextRenderer extends Renderer:
 
       case SlideElement.Spacer(lines) =>
         List.fill(lines)("")
+
+      case SlideElement.Image(url, alt) =>
+        Seq(s"![$alt]($url)")
