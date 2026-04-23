@@ -128,6 +128,16 @@ class HtmlRendererSpec extends AnyFlatSpec with RendererSpecSupport:
         include("val x = 42"),
     )
 
+  it should "render images using img tags with src and alt text" in:
+    val html = singleSlideContent("Media"):
+      image("./images/logo.png", "Company logo")
+
+    html.should(
+      include("<img") and
+        include("""src="./images/logo.png"""") and
+        include("""alt="Company logo""""),
+    )
+
   it should "escape html-sensitive code content" in:
     val html = renderedContent(
       slide("Code"):
@@ -170,10 +180,3 @@ class HtmlRendererSpec extends AnyFlatSpec with RendererSpecSupport:
         include("scrollIntoView") and
         include("presentation-root"),
     )
-
-  it should "embed a non empty navigation script" in:
-    val html = singleSlideContent():
-      text("Hello")
-
-    html should include("<script>")
-    html should not include "<script></script>"

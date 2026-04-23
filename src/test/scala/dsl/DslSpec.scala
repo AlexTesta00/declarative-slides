@@ -133,6 +133,23 @@ class DslSpec extends AnyFlatSpec with Matchers:
       SlideElement.Paragraph("After"),
     )
 
+  it should "support images" in:
+    val result =
+      presentation("Demo") {
+        deck(
+          slide("Media") {
+            content(
+              image("./images/logo.png", "Company logo"),
+            )
+          },
+        )
+      }
+
+    val deckResult = expectRight(result)
+    deckResult.slides.head.elements shouldBe Vector(
+      SlideElement.Image("./images/logo.png", "Company logo"),
+    )
+
   it should "support custom slide layouts" in:
     val result =
       presentation("Demo") {
@@ -405,6 +422,36 @@ class DslSpec extends AnyFlatSpec with Matchers:
 
     val errors = expectLeft(result)
     errors should contain(DomainError.NonPositiveSpacer(-2))
+
+  it should "return an error for a blank image source" in:
+    val result =
+      presentation("Broken") {
+        deck(
+          slide("Media") {
+            content(
+              image("   ", "Company logo"),
+            )
+          },
+        )
+      }
+
+    val errors = expectLeft(result)
+    errors should contain(DomainError.EmptyImageSource)
+
+  it should "return an error for a blank image alt text" in:
+    val result =
+      presentation("Broken") {
+        deck(
+          slide("Media") {
+            content(
+              image("./images/logo.png", "   "),
+            )
+          },
+        )
+      }
+
+    val errors = expectLeft(result)
+    errors should contain(DomainError.EmptyImageAltText)
 
   it should
     "accumulate presentation and slide errors instead of failing fast" in:
