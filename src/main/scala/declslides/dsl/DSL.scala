@@ -282,6 +282,15 @@ object DSL:
       SlideElement.Spacer(lines),
     )
 
+  /** Adds an image to the current slide. */
+  def image(
+    source: URL,
+    altText: String,
+  ): SlideBuild =
+    appendElement(
+      SlideElement.Image(source, altText),
+    )
+
   private def appendElement(
     element: SlideElement,
   ): SlideBuild =

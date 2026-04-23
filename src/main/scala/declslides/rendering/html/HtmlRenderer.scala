@@ -159,6 +159,13 @@ object HtmlRenderer extends Renderer:
           style := s"height: ${lines}rem;",
         )
 
+      case SlideElement.Image(source, altText) =>
+        img(
+          src := source,
+          alt := altText,
+          cls := "h-[70vh] w-full rounded-3xl object-cover shadow-2xl",
+        )
+
   private def bodyClasses(presentation: Presentation): String =
     s"m-0 h-screen overflow-hidden font-sans bg-[${presentation.theme.background}] text-[${presentation.theme.foreground}]"
 
