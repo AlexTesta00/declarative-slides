@@ -41,7 +41,7 @@ final class ScalaCliScriptRunner(
     for
       _ <- inputValidator.validate(input)
       userSource <- inputReader.read(input)
-      bootstrapSource = bootstrapSourceFactory.create(
+      bootstrapSource <- bootstrapSourceFactory.create(
         userSource = userSource,
         declslidesDependency = declslidesDependency,
         scalaVersion = scalaVersion,

@@ -1,5 +1,6 @@
 package application
 
+import declslides.application.ApplicationError
 import declslides.application.ScalaCliBootstrapSourceFactory
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -8,32 +9,48 @@ class ScalaCliBootstrapSourceFactorySpec extends AnyFlatSpec with Matchers:
 
   behavior of "ScalaCliBootstrapSourceFactory"
 
+  private def expectRight(
+    result: Either[ApplicationError, String],
+  ): String =
+    result match
+      case Right(source) =>
+        source
+
+      case Left(error) =>
+        fail(s"Expected Right(source), got Left($error)")
+
   it should "include the declslides dependency directive" in:
     val source =
-      ScalaCliBootstrapSourceFactory.create(
-        userSource = "Right(presentation)",
-        declslidesDependency = "com.acme::declslides-core:1.0.0",
-        scalaVersion = None,
+      expectRight(
+        ScalaCliBootstrapSourceFactory.create(
+          userSource = "Right(presentation)",
+          declslidesDependency = "com.acme::declslides-core:1.0.0",
+          scalaVersion = None,
+        ),
       )
 
     source should include("//> using dep com.acme::declslides-core:1.0.0")
 
   it should "include the scala directive when a scala version is provided" in:
     val source =
-      ScalaCliBootstrapSourceFactory.create(
-        userSource = "Right(presentation)",
-        declslidesDependency = "com.acme::declslides-core:1.0.0",
-        scalaVersion = Some("3.3.3"),
+      expectRight(
+        ScalaCliBootstrapSourceFactory.create(
+          userSource = "Right(presentation)",
+          declslidesDependency = "com.acme::declslides-core:1.0.0",
+          scalaVersion = Some("3.3.3"),
+        ),
       )
 
     source should include("//> using scala 3.3.3")
 
   it should "omit the scala directive when no scala version is provided" in:
     val source =
-      ScalaCliBootstrapSourceFactory.create(
-        userSource = "Right(presentation)",
-        declslidesDependency = "com.acme::declslides-core:1.0.0",
-        scalaVersion = None,
+      expectRight(
+        ScalaCliBootstrapSourceFactory.create(
+          userSource = "Right(presentation)",
+          declslidesDependency = "com.acme::declslides-core:1.0.0",
+          scalaVersion = None,
+        ),
       )
 
     source should not include "//> using scala"
@@ -45,10 +62,12 @@ class ScalaCliBootstrapSourceFactorySpec extends AnyFlatSpec with Matchers:
         |)""".stripMargin
 
     val source =
-      ScalaCliBootstrapSourceFactory.create(
-        userSource = userSource,
-        declslidesDependency = "com.acme::declslides-core:1.0.0",
-        scalaVersion = None,
+      expectRight(
+        ScalaCliBootstrapSourceFactory.create(
+          userSource = userSource,
+          declslidesDependency = "com.acme::declslides-core:1.0.0",
+          scalaVersion = None,
+        ),
       )
 
     source should include("Bootstrap.resolve {")
@@ -59,10 +78,12 @@ class ScalaCliBootstrapSourceFactorySpec extends AnyFlatSpec with Matchers:
   it should
     "define a render main entrypoint in the generated bootstrap source" in:
       val source =
-        ScalaCliBootstrapSourceFactory.create(
-          userSource = "Right(presentation)",
-          declslidesDependency = "com.acme::declslides-core:1.0.0",
-          scalaVersion = None,
+        expectRight(
+          ScalaCliBootstrapSourceFactory.create(
+            userSource = "Right(presentation)",
+            declslidesDependency = "com.acme::declslides-core:1.0.0",
+            scalaVersion = None,
+          ),
         )
 
       source should

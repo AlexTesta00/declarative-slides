@@ -31,6 +31,11 @@ enum ApplicationError derives CanEqual:
   /** The generated bootstrap script failed during execution. */
   case ScriptExecutionFailed(details: String)
 
+  /** The bootstrap template could not be loaded or read. */
+  case BootstrapTemplateUnavailable(
+    path: String,
+    reason: String)
+
   /** Returns description of the error. */
   def message: String = this match
     case InputFileNotFound(path) =>
@@ -50,3 +55,6 @@ enum ApplicationError derives CanEqual:
 
     case ScriptExecutionFailed(details) =>
       s"Script execution failed:\n$details"
+
+    case BootstrapTemplateUnavailable(path, reason) =>
+      s"Cannot load bootstrap template '$path': $reason"

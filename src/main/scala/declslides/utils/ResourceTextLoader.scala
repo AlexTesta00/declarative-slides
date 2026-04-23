@@ -1,4 +1,4 @@
-package declslides.rendering.html
+package declslides.utils
 
 import java.nio.charset.StandardCharsets
 import scala.util.Using
