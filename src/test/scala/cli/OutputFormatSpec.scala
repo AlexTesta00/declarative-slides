@@ -14,6 +14,8 @@ class OutputFormatSpec extends AnyFlatSpec with Matchers:
       OutputFormat.Html,
       OutputFormat.Text,
       OutputFormat.Txt,
+      OutputFormat.Markdown,
+      OutputFormat.Md,
     )
 
   it should "parse html" in:
@@ -25,8 +27,15 @@ class OutputFormatSpec extends AnyFlatSpec with Matchers:
   it should "parse txt" in:
     OutputFormat.parse("txt") shouldBe Right(OutputFormat.Txt)
 
+  it should "parse markdown" in:
+    OutputFormat.parse("markdown") shouldBe Right(OutputFormat.Markdown)
+
+  it should "parse md" in:
+    OutputFormat.parse("md") shouldBe Right(OutputFormat.Md)
+
   it should "expose supported values as plain strings" in:
-    OutputFormat.supportedValues shouldBe List("html", "text", "txt")
+    OutputFormat.supportedValues shouldBe
+      List("html", "text", "txt", "markdown", "md")
 
   it should "fail on unsupported formats" in:
     OutputFormat.parse("pdf") shouldBe Left(

@@ -19,3 +19,5 @@ class CliUsageSpec extends AnyFlatSpec with Matchers:
     CliUsage.text should include("html")
     CliUsage.text should include("text")
     CliUsage.text should include("txt")
+    CliUsage.text should include("markdown")
+    CliUsage.text should include("md")
